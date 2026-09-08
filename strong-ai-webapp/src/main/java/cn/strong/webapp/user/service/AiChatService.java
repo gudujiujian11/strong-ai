@@ -1,48 +1,35 @@
 package cn.strong.webapp.user.service;
 
 import cn.strong.common.exception.ParamValiateException;
-import cn.strong.webapp.user.config.AiModelProperties;
 import cn.strong.webapp.user.model.request.AiChatMessageRequest;
 import cn.strong.webapp.user.model.request.AiChatRequest;
 import cn.strong.webapp.user.model.response.AiChatResponse;
-import io.github.lnyocly.ai4j.platform.dashscope.DashScopeChatService;
-import io.github.lnyocly.ai4j.platform.deepseek.chat.DeepSeekChatService;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletion;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletionResponse;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatMessage;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.Choice;
-import io.github.lnyocly.ai4j.platform.doubao.chat.DoubaoChatService;
 import io.github.lnyocly.ai4j.service.IChatService;
-import io.github.lnyocly.ai4j.service.Configuration;
+import io.github.lnyocly.ai4j.service.factory.AiServiceRegistry;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** 统一封装豆包、千问、DeepSeek 的同步聊天调用。 */
+/** 通过 ai4j starter 的多模型注册表统一调用聊天模型。 */
 @Service
 public class AiChatService {
 
-    private final AiModelProperties properties;
-    private final IChatService doubaoService;
-    private final IChatService qwenService;
-    private final IChatService deepseekService;
+    private final AiServiceRegistry aiServiceRegistry;
 
-    public AiChatService(AiModelProperties properties, Configuration configuration) {
-        this.properties = properties;
-        this.doubaoService = new DoubaoChatService(configuration);
-        this.qwenService = new DashScopeChatService(configuration);
-        this.deepseekService = new DeepSeekChatService(configuration);
+    public AiChatService(AiServiceRegistry aiServiceRegistry) {
+        this.aiServiceRegistry = aiServiceRegistry;
     }
 
     public AiChatResponse chat(AiChatRequest request) {
         validate(request);
         String provider = normalizeProvider(request.getProvider());
-        AiModelProperties.Provider providerProperties = providerProperties(provider);
-        if (isBlank(providerProperties.getApiKey())) {
-            throw new ParamValiateException("未配置 " + provider + " 的 API Key");
-        }
+        IChatService chatService = service(provider);
 
         ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
                 .model(request.getModel().trim())
@@ -59,7 +46,7 @@ public class AiChatService {
         }
 
         try {
-            ChatCompletionResponse response = service(provider).chatCompletion(builder.build());
+            ChatCompletionResponse response = chatService.chatCompletion(builder.build());
             return toResponse(provider, response);
         } catch (Exception ex) {
             throw new IllegalStateException("调用 " + provider + " 模型失败", ex);
@@ -67,26 +54,10 @@ public class AiChatService {
     }
 
     private IChatService service(String provider) {
-        if ("doubao".equals(provider)) {
-            return doubaoService;
+        if (!aiServiceRegistry.contains(provider)) {
+            throw new ParamValiateException("未配置或不支持的 provider: " + provider);
         }
-        if ("qwen".equals(provider)) {
-            return qwenService;
-        }
-        return deepseekService;
-    }
-
-    private AiModelProperties.Provider providerProperties(String provider) {
-        if ("doubao".equals(provider)) {
-            return properties.getDoubao();
-        }
-        if ("qwen".equals(provider)) {
-            return properties.getQwen();
-        }
-        if ("deepseek".equals(provider)) {
-            return properties.getDeepseek();
-        }
-        throw new ParamValiateException("不支持的 provider，仅支持 doubao、qwen、deepseek");
+        return aiServiceRegistry.getChatService(provider);
     }
 
     private String normalizeProvider(String provider) {

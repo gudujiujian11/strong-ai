@@ -36,6 +36,16 @@ http://localhost:11028/doc.html
 
 ## 使用示例
 
+### AI 聊天
+
+AI 调用由 `ai4j-spring-boot-starter` 自动装配。`bootstrap.yml` 的 `ai.platforms` 以 `id` 作为接口的 `provider`，以 `platform` 指定模型厂商实现。密钥必须通过环境变量或 Nacos 密文配置注入。
+
+```bash
+curl -X POST http://localhost:11028/api/ai/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"deepseek","model":"deepseek-chat","messages":[{"role":"user","content":"你好"}]}'
+```
+
 ## 注意
 
 - swagger 文档

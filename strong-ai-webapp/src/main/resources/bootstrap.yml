@@ -59,18 +59,24 @@ management:
 strong:
   swagger:
     base-package: cn.strong.webapp.user
-  ai:
-    doubao:
-      # 建议在 Nacos 或环境变量中覆盖，禁止将真实密钥提交到代码仓库
+
+# ai4j-spring-boot-starter: provider 使用 id 路由，platform 选择对应 SDK 实现。
+# API Key 仅从环境变量或 Nacos 密文配置获取，禁止提交到仓库。
+ai:
+  platforms:
+    - id: doubao
+      platform: doubao
       api-key: ${DOUBAO_API_KEY:}
       api-host: ${DOUBAO_API_HOST:https://ark.cn-beijing.volces.com/api/v3}
       chat-completion-url: ${DOUBAO_CHAT_COMPLETION_URL:/chat/completions}
-    qwen:
+    - id: qwen
+      platform: dashscope
       api-key: ${QWEN_API_KEY:}
       api-host: ${QWEN_API_HOST:https://dashscope.aliyuncs.com/api/v1}
       responses-url: ${QWEN_RESPONSES_URL:/services/aigc/text-generation/generation}
-    deepseek:
-      api-key: ${DEEPSEEK_API_KEY:REMOVED_SECRET}
+    - id: deepseek
+      platform: deepseek
+      api-key: ${DEEPSEEK_API_KEY:}
       api-host: ${DEEPSEEK_API_HOST:https://api.deepseek.com}
       chat-completion-url: ${DEEPSEEK_CHAT_COMPLETION_URL:/chat/completions}
 
