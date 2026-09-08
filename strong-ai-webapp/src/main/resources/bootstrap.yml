@@ -70,7 +70,7 @@ strong:
       api-host: ${QWEN_API_HOST:https://dashscope.aliyuncs.com/api/v1}
       responses-url: ${QWEN_RESPONSES_URL:/services/aigc/text-generation/generation}
     deepseek:
-      api-key: ${DEEPSEEK_API_KEY:}
+      api-key: ${DEEPSEEK_API_KEY:REMOVED_SECRET}
       api-host: ${DEEPSEEK_API_HOST:https://api.deepseek.com}
       chat-completion-url: ${DEEPSEEK_CHAT_COMPLETION_URL:/chat/completions}
 
