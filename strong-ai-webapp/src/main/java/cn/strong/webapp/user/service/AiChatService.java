@@ -4,6 +4,7 @@ import cn.strong.common.exception.ParamValiateException;
 import cn.strong.webapp.user.model.request.AiChatMessageRequest;
 import cn.strong.webapp.user.model.request.AiChatRequest;
 import cn.strong.webapp.user.model.response.AiChatResponse;
+import io.github.lnyocly.ai4j.listener.SseListener;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletion;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletionResponse;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatMessage;
@@ -27,7 +28,7 @@ public class AiChatService {
     }
 
     public AiChatResponse chat(AiChatRequest request) {
-        validate(request);
+        validate(request, false);
         String provider = normalizeProvider(request.getProvider());
         IChatService chatService = service(provider);
 
@@ -53,6 +54,35 @@ public class AiChatService {
         }
     }
 
+    public void chatStream(AiChatRequest request, SseListener listener) {
+        validate(request, true);
+        String provider = normalizeProvider(request.getProvider());
+        IChatService chatService = service(provider);
+
+        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
+                .model(request.getModel().trim())
+                .messages(toMessages(request.getMessages()))
+                .stream(Boolean.TRUE);
+        if (request.getTemperature() != null) {
+            builder.temperature(request.getTemperature());
+        }
+        if (request.getTopP() != null) {
+            builder.topP(request.getTopP());
+        }
+        if (request.getMaxTokens() != null) {
+            builder.maxTokens(request.getMaxTokens());
+        }
+
+        try {
+            chatService.chatCompletionStream(builder.build(), listener);
+            if (listener.getFailure() != null) {
+                throw new IllegalStateException(listener.getFailure());
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException("调用 " + provider + " 流式模型失败", ex);
+        }
+    }
+
     private IChatService service(String provider) {
         if (!aiServiceRegistry.contains(provider)) {
             throw new ParamValiateException("未配置或不支持的 provider: " + provider);
@@ -65,7 +95,7 @@ public class AiChatService {
         return "dashscope".equals(normalized) ? "qwen" : normalized;
     }
 
-    private void validate(AiChatRequest request) {
+    private void validate(AiChatRequest request, boolean stream) {
         if (request == null || isBlank(request.getProvider())) {
             throw new ParamValiateException("provider 不能为空");
         }
@@ -75,7 +105,7 @@ public class AiChatService {
         if (request.getMessages() == null || request.getMessages().isEmpty()) {
             throw new ParamValiateException("messages 不能为空");
         }
-        if (Boolean.TRUE.equals(request.getStream())) {
+        if (!stream && Boolean.TRUE.equals(request.getStream())) {
             throw new ParamValiateException("当前接口暂不支持 stream=true");
         }
         for (AiChatMessageRequest message : request.getMessages()) {

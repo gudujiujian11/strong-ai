@@ -1,12 +1,16 @@
 package cn.strong.webapp.user.config;
 
+import cn.strong.webapp.user.controller.AiChatController;
+import cn.strong.webapp.user.service.AiChatService;
 import io.github.lnyocly.ai4j.AiConfigAutoConfiguration;
 import io.github.lnyocly.ai4j.service.factory.AiServiceRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class Ai4jStarterConfigurationTest {
 
@@ -31,5 +35,14 @@ class Ai4jStarterConfigurationTest {
             assertTrue(registry.contains("qwen"));
             assertTrue(registry.contains("deepseek"));
         });
+    }
+
+    @Test
+    void shouldCreateChatControllerWithTheApplicationTaskExecutor() {
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(TaskExecutionAutoConfiguration.class))
+                .withBean(AiChatService.class, () -> mock(AiChatService.class))
+                .withBean(AiChatController.class)
+                .run(context -> assertTrue(context.containsBean("aiChatController")));
     }
 }

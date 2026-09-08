@@ -4,6 +4,7 @@ import cn.strong.common.exception.ParamValiateException;
 import cn.strong.webapp.user.model.request.AiChatMessageRequest;
 import cn.strong.webapp.user.model.request.AiChatRequest;
 import cn.strong.webapp.user.model.response.AiChatResponse;
+import io.github.lnyocly.ai4j.listener.SseListener;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletion;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletionResponse;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatMessage;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +51,25 @@ class AiChatServiceTest {
 
         assertThrows(ParamValiateException.class,
                 () -> new AiChatService(registry).chat(chatRequest("unknown")));
+    }
+
+    @Test
+    void shouldCreateAStreamRequestForConfiguredProvider() throws Exception {
+        AiServiceRegistry registry = mock(AiServiceRegistry.class);
+        IChatService chatService = mock(IChatService.class);
+        when(registry.contains("deepseek")).thenReturn(true);
+        when(registry.getChatService("deepseek")).thenReturn(chatService);
+        doNothing().when(chatService).chatCompletionStream(any(ChatCompletion.class), any(SseListener.class));
+
+        new AiChatService(registry).chatStream(chatRequest("deepseek"), new SseListener() {
+            @Override
+            protected void send() {
+            }
+        });
+
+        ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
+        verify(chatService).chatCompletionStream(captor.capture(), any(SseListener.class));
+        assertEquals(Boolean.TRUE, captor.getValue().getStream());
     }
 
     private AiChatRequest chatRequest(String provider) {

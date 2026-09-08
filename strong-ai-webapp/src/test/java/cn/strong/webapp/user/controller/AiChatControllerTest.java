@@ -1,8 +1,11 @@
 package cn.strong.webapp.user.controller;
 
+import cn.strong.common.base.Result;
 import cn.strong.webapp.user.SpringBootTests;
 import cn.strong.webapp.user.model.request.AiChatMessageRequest;
 import cn.strong.webapp.user.model.request.AiChatRequest;
+import cn.strong.webapp.user.model.response.AiChatResponse;
+import com.alibaba.fastjson2.JSON;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
@@ -24,7 +27,8 @@ class AiChatControllerTest extends SpringBootTests {
         request.setMessages(messages);
         request.setTemperature(0.7f);
         request.setTopP(0.9f);
-        request.setMaxTokens(1024000);
-        aiChatController.chat(request);
+        request.setMaxTokens(393216);
+        Result<AiChatResponse> result = aiChatController.chat(request);
+        System.out.println(JSON.toJSONString(result));
     }
 }
