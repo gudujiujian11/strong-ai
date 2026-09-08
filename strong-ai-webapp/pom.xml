@@ -124,6 +124,15 @@
             <version>2.4.2</version>
         </dependency>
 
+        <!-- ai4j 2.4.2 uses the Reflections 0.10 API (including Scanners).
+             nacos-client brings in 0.9.11 transitively, so declare the
+             compatible version directly to keep it on the runtime classpath. -->
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.10.2</version>
+        </dependency>
+
         <!-- ai4j 2.4.2 is compiled against OkHttp 4.x. The framework parent
              manages these artifacts at 3.14.9, which is binary-incompatible
              with ai4j's RequestBody.create(String, MediaType) call. -->
