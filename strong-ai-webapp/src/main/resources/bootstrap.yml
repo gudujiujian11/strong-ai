@@ -1,0 +1,88 @@
+server:
+  port: 11028
+spring:
+  application:
+    name: strong-ai
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false #禁用ribbon
+      retry:
+        enabled: false #禁用重试
+    inetutils:
+      preferredNetworks: [ '192.168' ]
+    nacos:
+      config:
+        server-addr: 192.168.40.56:8848 #nacos注册中心地址
+        namespace: test20-2 #对应的namespaceId
+        group: ${spring.application.name} #分组ID，这里使用spring.application.name的值
+        file-extension: properties
+        refresh-enabled: true
+        shared-configs:
+          - data-id: config.properties # 通用配置
+            group: ${spring.cloud.nacos.config.group}
+            refresh: true
+          - data-id: cache.properties # 缓存配置
+            group: ${spring.cloud.nacos.config.group}
+            refresh: false
+          - data-id: mq.properties # MQ配置
+            group: ${spring.cloud.nacos.config.group}
+            refresh: false
+          - data-id: db.properties # 数据库配置
+            group: ${spring.cloud.nacos.config.group}
+            refresh: false
+          - data-id: log4j2-spring.xml # log4j2配置
+            group: ${spring.cloud.nacos.config.group}
+            refresh: true
+      discovery:
+        server-addr: ${spring.cloud.nacos.config.server-addr}
+        namespace: ${spring.cloud.nacos.config.namespace}
+        service: ${spring.application.name}
+logging:
+  config: classpath:log4j2-spring.xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - "serviceregistry"
+          - "prometheus"
+          - "health"
+        exclude:
+          - "solr"
+          - "elasticsearch"
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+strong:
+  swagger:
+    base-package: cn.strong.webapp.user
+  ai:
+    doubao:
+      # 建议在 Nacos 或环境变量中覆盖，禁止将真实密钥提交到代码仓库
+      api-key: ${DOUBAO_API_KEY:}
+      api-host: ${DOUBAO_API_HOST:https://ark.cn-beijing.volces.com/api/v3}
+      chat-completion-url: ${DOUBAO_CHAT_COMPLETION_URL:/chat/completions}
+    qwen:
+      api-key: ${QWEN_API_KEY:}
+      api-host: ${QWEN_API_HOST:https://dashscope.aliyuncs.com/api/v1}
+      responses-url: ${QWEN_RESPONSES_URL:/services/aigc/text-generation/generation}
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      api-host: ${DEEPSEEK_API_HOST:https://api.deepseek.com}
+      chat-completion-url: ${DEEPSEEK_CHAT_COMPLETION_URL:/chat/completions}
+
+feign:
+  httpclient: # 开启 HttpClient
+    enabled: true
+    max-connections: 200 # 最大连接数
+    max-connections-per-route: 50 #每个路由最大连接数
+    connection-timeout: 5000 #连接超时
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: basic

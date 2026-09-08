@@ -1,0 +1,94 @@
+include:
+  - local: '/.developer-vars.yml'
+  - remote: 'https://gitlab.leke.cn/deployments/include/-/raw/master/.leke-ops-vars.yml'
+  - remote: 'https://gitlab.leke.cn/deployments/include/-/raw/master/maven.yml'
+  - remote: 'https://gitlab.leke.cn/deployments/include/-/raw/master/sonar.yml'
+  - remote: 'https://gitlab.leke.cn/deployments/include/-/raw/master/docker-image.yml'
+  - remote: 'https://gitlab.leke.cn/deployments/include/-/raw/master/jar-deploy-v2.yml'
+
+
+variables:
+  # image group, sre define
+  REGISTRY_GROUP: '$BUSINESS_NAME'
+  # image name, sre define
+  REGISTRY_IMAGE_JAR: '${APP_NAME}:${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}'
+  # image name, sre define
+  REGISTRY_IMAGE: '${APP_NAME}:${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}'
+  # k8s config, sre define
+  KUBECONFIG: '/config'
+  # k8s deployments, sre define
+  CD_REPO: 'gitlab.leke.cn/deployments/${BUSINESS_NAME}/backend/${APP_NAME}.git'
+
+
+stages:
+  - maven package
+  - build docker image
+  - deploy to dev
+  - deploy to testing
+  - deploy to uat
+  - deploy to pre
+  - deploy to prod
+
+
+Maven build:
+  stage: maven package
+  tags:
+    - k8s
+  extends: .maven-build
+  script:
+    - mvn -DskipTests clean package -P !dev $MAVEN_OPTS
+
+
+SonarQube check:
+  stage: maven package
+  extends: .sonarqube-check
+Image build:
+  stage: build docker image
+  extends: .docker
+
+
+testing-2:
+  stage: deploy to testing
+  variables:
+    K8S_CLUSTER: '$INSIDE_K8S_CLUSTER'
+    ENV_NAME: 'testing-2'
+    APP_CONFIG: '${JVM_OPTS_TESTING2}'
+    ARGO_PROJ: '${BUSINESS_NAME}-dev'
+    CD_GIT_PATH: 'testing'
+    DNS: '$DNS_TESTING2'
+  extends: .deploy
+  only:
+    - /^testing-2-.*/
+    - /^hotfix-.*/
+    - master
+
+
+uat-207:
+  stage: deploy to uat
+  variables:
+    K8S_CLUSTER: '$INSIDE_K8S_CLUSTER'
+    ENV_NAME: 'uat-207'
+    APP_CONFIG: '${JVM_OPTS_UAT207}'
+    ARGO_PROJ: '${BUSINESS_NAME}-uat'
+    CD_GIT_PATH: 'uat'
+    DNS: '$DNS_UAT207'
+  extends: .deploy
+  only:
+    - release
+    - /^hotfix-.*/
+    - master
+
+
+prod:
+  stage: deploy to prod
+  variables:
+    K8S_CLUSTER: '$CCE2'
+    ENV_NAME: 'prod'
+    APP_CONFIG: '${JVM_OPTS_PROD}'
+    ARGO_PROJ: '${BUSINESS_NAME}-prod'
+    CD_GIT_PATH: 'prod'
+    DNS: '$DNS_PROD'
+  extends: .deploy
+  only:
+    - release
+    - /^hotfix-.*/

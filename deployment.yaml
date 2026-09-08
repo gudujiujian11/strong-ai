@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strong-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: strong-ai
+  template:
+    metadata:
+      labels:
+        app: strong-ai
+    spec:
+      containers:
+        - env:
+            - name: SERVER_PORT
+              value: '11028'
+            - name: JVM_OPTS
+              value: ENV_JVM_OPTS
+#            - name: JVM_AGENT
+#              value: ENV_JVM_AGENT
+          name: strong-ai
+          image: FULL_IMAGE
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 11028
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: strong-ai
+  namespace: backend
+spec:
+  ports:
+    - port: 11028
+      targetPort: 11028
+      name: strong-ai
+  selector:
+    app: strong-ai
+  type: LoadBalancer

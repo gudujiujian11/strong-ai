@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>cn.strong.webapp</groupId>
+        <artifactId>strong-ai</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <version>1.0-SNAPSHOT</version>
+
+    <artifactId>strong-ai-webapp</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <!--    webapp模块不需要deploy    -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.strong</groupId>
+            <artifactId>strong-webapp-base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.strong.webapp</groupId>
+            <artifactId>strong-ai-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.strong.webapp</groupId>
+            <artifactId>strong-ai-mq-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.strong.webapp</groupId>
+            <artifactId>strong-ai-remote-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--log4j2 依赖-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-log4j2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+        </dependency>
+
+        <!--naco配置中心和注册中心-->
+        <dependency>
+            <groupId>cn.strong</groupId>
+            <artifactId>nacos-extend-spring-cloud-starter</artifactId>
+            <version>2023.1-SNAPSHOT</version>
+        </dependency>
+
+        <!-- openFeign 远程调用相关 具体属性配置参考 https://docs.spring.io/spring-cloud-openfeign/docs/3.0.0/reference/html/-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+        <!-- 添加 httpclient 框架依赖 -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-httpclient</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
+
+        <!--    自定义区域    -->
+
+        <!--        &lt;!&ndash;  mysql && mybatis && mybatis plus &ndash;&gt;
+                <dependency>
+                    <groupId>cn.strong</groupId>
+                    <artifactId>strong-mybatis-plus-extend</artifactId>
+                </dependency>
+
+                &lt;!&ndash;   redis client with lettuce   &ndash;&gt;
+                <dependency>
+                    <groupId>cn.strong</groupId>
+                    <artifactId>lettuce-spring-boot-starter</artifactId>
+                </dependency>
+
+                &lt;!&ndash;   分布式锁     &ndash;&gt;
+                <dependency>
+                    <groupId>cn.strong</groupId>
+                    <artifactId>klock-spring-boot-starter</artifactId>
+                </dependency>-->
+
+        <dependency>
+            <groupId>io.github.lnyo-cly</groupId>
+            <artifactId>ai4j</artifactId>
+            <version>2.4.2</version>
+        </dependency>
+
+
+        <!--    自定义区域结束    -->
+
+        <!--    junit    -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>cn.strong</groupId>-->
+<!--            <artifactId>strong-mybatis-plus-extend</artifactId>-->
+<!--            <version>2024.1-SNAPSHOT</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.baomidou</groupId>-->
+<!--            <artifactId>mybatis-plus-generator</artifactId>-->
+<!--            <version>3.5.2</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-engine-core</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>strong-ai</finalName>
+        <resources>
+            <!-- fix for mybatis files -->
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.jsp</include>
+                    <include>**/*.conf</include>
+                    <include>**/*.yml</include>
+                    <include>**/*.yaml</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.4.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!--开启分层编译支持-->
+                    <layers>
+                        <enabled>true</enabled>
+                        <configuration>${project.basedir}/.layers.xml</configuration>
+                    </layers>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

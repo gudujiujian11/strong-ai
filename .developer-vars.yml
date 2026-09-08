@@ -1,0 +1,18 @@
+variables:
+  # business name, developer define
+  BUSINESS_NAME: 'infra'
+  # project name, developer define
+  APP_NAME: 'strong-ai'
+  # Jar/War path, developer define
+  TARGET_PATH: '${APP_NAME}-webapp/target/*.jar'
+  # jvm args, developer define
+  JVM_OPTS_DEV21: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=dev-21 -Dspring.cloud.nacos.config.server-addr=10.43.119.156:8848'
+  JVM_OPTS_TESTING2: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=test20-2 -Dspring.cloud.nacos.config.server-addr=10.43.119.156:8848 '
+  JVM_OPTS_TESTING22: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=testing-22 -Dspring.cloud.nacos.config.server-addr=10.43.119.156:8848 '
+  JVM_OPTS_TESTING76: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=testing-76 -Dspring.cloud.nacos.config.server-addr=10.43.119.156:8848 '
+  JVM_OPTS_TESTING91: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=testing-91 -Dspring.cloud.nacos.config.server-addr=10.43.119.156:8848 '
+  JVM_OPTS_TESTING105: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=testing-105 -Dspring.cloud.nacos.config.server-addr=10.43.119.156:8848 '
+  JVM_OPTS_UAT207: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=uat-207 -Dspring.cloud.nacos.config.server-addr=10.43.119.156:8848 '
+  JVM_OPTS_PRE: '-Xmx512m -Xms512m -Xss512k -Dspring.cloud.nacos.config.namespace=infra-pre -Dspring.cloud.nacos.config.server-addr=192.168.160.248:8848 '
+  JVM_OPTS_PROD: '-Xmx1024m -Xms1024m -Xss512k -Dspring.cloud.nacos.config.namespace=infra-prd -Dspring.cloud.nacos.config.server-addr=192.168.160.248:8848 '
+
