@@ -19,10 +19,11 @@ class WebUiResourceTest {
 
         assertTrue(html.contains("id=\"sessionList\""));
         assertTrue(html.contains("id=\"modelMenu\""));
-        assertTrue(javascript.contains("/api/ai/chat/stream"));
+        assertTrue(javascript.contains("/api/conversations"));
         assertTrue(javascript.contains("provider: \"openai\""));
         assertTrue(javascript.contains("provider: \"deepseek\""));
         assertTrue(javascript.contains("response.body"));
+        assertFalse(javascript.contains("strong-ai.conversations.v1"));
         assertFalse(javascript.toLowerCase().contains("api-key"));
     }
 

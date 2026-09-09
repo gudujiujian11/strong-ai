@@ -1,9 +1,8 @@
 (() => {
     "use strict";
 
-    const STORAGE_KEY = "strong-ai.conversations.v1";
     const THEME_KEY = "strong-ai.theme";
-    const CHAT_ENDPOINT = "/api/ai/chat/stream";
+    const CONVERSATIONS_ENDPOINT = "/api/conversations";
 
     const MODEL_GROUPS = [
         {
@@ -29,7 +28,7 @@
 
     const DEFAULT_MODEL = { provider: "openai", model: "gpt-5.6-sol" };
     const state = {
-        conversations: loadConversations(),
+        conversations: [],
         activeId: null,
         search: "",
         streaming: false,
@@ -39,9 +38,9 @@
 
     const elements = {};
 
-    document.addEventListener("DOMContentLoaded", initialize);
+    document.addEventListener("DOMContentLoaded", () => { initialize(); });
 
-    function initialize() {
+    async function initialize() {
         [
             "sidebar", "sidebarScrim", "sidebarOpen", "sidebarClose", "newChatButton",
             "sessionSearch", "sessionList", "modelTrigger", "modelMenu", "providerMark",
@@ -51,10 +50,14 @@
         ].forEach((id) => { elements[id] = document.getElementById(id); });
 
         applyInitialTheme();
-        ensureConversation();
         bindEvents();
-        renderModelMenu();
-        renderAll();
+        try {
+            await ensureConversation();
+            renderModelMenu();
+            renderAll();
+        } catch (error) {
+            showToast(cleanError(error.message));
+        }
         refreshIcons();
     }
 
@@ -86,36 +89,21 @@
         document.addEventListener("keydown", handleGlobalKeydown);
     }
 
-    function ensureConversation() {
-        const preferredId = localStorage.getItem(`${STORAGE_KEY}.active`);
-        const preferred = state.conversations.find((item) => item.id === preferredId);
-        if (preferred) {
-            state.activeId = preferred.id;
-            return;
-        }
+    async function ensureConversation() {
+        state.conversations = await requestJson(CONVERSATIONS_ENDPOINT);
         if (state.conversations.length) {
             state.activeId = state.conversations[0].id;
             return;
         }
-        const conversation = newConversation();
-        state.conversations.push(conversation);
+        const conversation = await requestJson(CONVERSATIONS_ENDPOINT, {
+            method: "POST",
+            body: JSON.stringify(DEFAULT_MODEL)
+        });
+        state.conversations = [conversation];
         state.activeId = conversation.id;
-        persist();
     }
 
-    function newConversation() {
-        return {
-            id: createId(),
-            title: "新对话",
-            provider: DEFAULT_MODEL.provider,
-            model: DEFAULT_MODEL.model,
-            messages: [],
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        };
-    }
-
-    function createConversation() {
+    async function createConversation() {
         if (state.streaming) {
             stopGeneration();
         }
@@ -125,10 +113,12 @@
             setSidebar(false);
             return;
         }
-        const conversation = newConversation();
+        const conversation = await requestJson(CONVERSATIONS_ENDPOINT, {
+            method: "POST",
+            body: JSON.stringify(DEFAULT_MODEL)
+        });
         state.conversations.unshift(conversation);
         state.activeId = conversation.id;
-        persist();
         renderAll();
         setSidebar(false);
         elements.messageInput.focus();
@@ -136,6 +126,21 @@
 
     function activeConversation() {
         return state.conversations.find((item) => item.id === state.activeId);
+    }
+
+    async function reloadConversations() {
+        state.conversations = await requestJson(CONVERSATIONS_ENDPOINT);
+        if (!state.conversations.some((conversation) => conversation.id === state.activeId)) {
+            state.activeId = state.conversations.length ? state.conversations[0].id : null;
+        }
+        renderSessions();
+        renderSelectedModel();
+        renderModelMenu();
+    }
+
+    function replaceConversation(updated) {
+        const index = state.conversations.findIndex((conversation) => conversation.id === updated.id);
+        if (index >= 0) state.conversations[index] = updated;
     }
 
     function renderAll() {
@@ -195,7 +200,7 @@
         return buckets.filter((bucket) => bucket.items.length);
     }
 
-    function handleSessionClick(event) {
+    async function handleSessionClick(event) {
         const deleteButton = event.target.closest("[data-delete-session]");
         if (deleteButton) {
             deleteConversation(deleteButton.dataset.deleteSession);
@@ -205,33 +210,38 @@
         if (!sessionButton || sessionButton.dataset.sessionId === state.activeId) return;
         if (state.streaming) stopGeneration();
         state.activeId = sessionButton.dataset.sessionId;
-        localStorage.setItem(`${STORAGE_KEY}.active`, state.activeId);
         renderAll();
         setSidebar(false);
     }
 
-    function deleteConversation(id) {
+    async function deleteConversation(id) {
         const target = state.conversations.find((item) => item.id === id);
         if (!target) return;
         if (target.messages.length && !window.confirm(`删除“${target.title}”？此操作无法撤销。`)) return;
         if (state.streaming && state.activeId === id) stopGeneration();
+        await requestJson(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(id)}`, { method: "DELETE" });
         state.conversations = state.conversations.filter((item) => item.id !== id);
-        if (!state.conversations.length) state.conversations.push(newConversation());
+        if (!state.conversations.length) {
+            const conversation = await requestJson(CONVERSATIONS_ENDPOINT, {
+                method: "POST",
+                body: JSON.stringify(DEFAULT_MODEL)
+            });
+            state.conversations.push(conversation);
+        }
         if (state.activeId === id) state.activeId = state.conversations[0].id;
-        persist();
         renderAll();
         showToast("会话已删除");
     }
 
-    function clearCurrentConversation() {
+    async function clearCurrentConversation() {
         const conversation = activeConversation();
         if (!conversation || !conversation.messages.length) return;
         if (!window.confirm("清空当前会话中的全部消息？")) return;
         if (state.streaming) stopGeneration();
-        conversation.messages = [];
-        conversation.title = "新对话";
-        conversation.updatedAt = Date.now();
-        persist();
+        const updated = await requestJson(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}/messages`, {
+            method: "DELETE"
+        });
+        replaceConversation(updated);
         renderAll();
     }
 
@@ -270,14 +280,15 @@
         elements.modelTrigger.setAttribute("aria-expanded", "false");
     }
 
-    function handleModelSelection(event) {
+    async function handleModelSelection(event) {
         const option = event.target.closest("[data-model]");
         if (!option || state.streaming) return;
         const conversation = activeConversation();
-        conversation.provider = option.dataset.provider;
-        conversation.model = option.dataset.model;
-        conversation.updatedAt = Date.now();
-        persist();
+        const updated = await requestJson(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}`, {
+            method: "PUT",
+            body: JSON.stringify({ provider: option.dataset.provider, model: option.dataset.model })
+        });
+        replaceConversation(updated);
         renderSelectedModel();
         renderModelMenu();
         closeModelMenu();
@@ -391,10 +402,7 @@
     function retryMessage(index) {
         const conversation = activeConversation();
         if (!conversation || index < 0 || conversation.messages[index].role !== "assistant") return;
-        conversation.messages = conversation.messages.slice(0, index);
-        persist();
-        renderMessages();
-        generateReply(conversation);
+        generateReply(conversation, conversation.messages[index].id);
     }
 
     async function handleSubmit(event) {
@@ -402,58 +410,36 @@
         const content = elements.messageInput.value.trim();
         if (!content || state.streaming) return;
 
-        const conversation = activeConversation();
-        conversation.messages.push({
-            id: createId(),
-            role: "user",
-            content,
-            createdAt: Date.now()
-        });
-        if (conversation.messages.filter((message) => message.role === "user").length === 1) {
-            conversation.title = makeTitle(content);
-        }
-        conversation.updatedAt = Date.now();
         elements.messageInput.value = "";
         updateComposer();
-        persist();
-        renderSessions();
-        renderMessages();
-        await generateReply(conversation);
+        await generateReply(activeConversation(), null, content);
     }
 
-    async function generateReply(conversation) {
-        const assistant = {
-            id: createId(),
-            role: "assistant",
-            content: "",
-            reasoning: "",
-            provider: conversation.provider,
-            model: conversation.model,
-            status: "streaming",
-            createdAt: Date.now()
-        };
-        conversation.messages.push(assistant);
+    async function generateReply(conversation, regenerateMessageId, userContent) {
+        let endpoint;
+        let requestOptions = { method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" } };
+        if (regenerateMessageId) {
+            endpoint = `${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}/messages/${encodeURIComponent(regenerateMessageId)}/regenerate/stream`;
+        } else {
+            endpoint = `${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}/messages/stream`;
+            requestOptions.body = JSON.stringify({ content: userContent });
+        }
         state.streaming = true;
         state.controller = new AbortController();
         updateStreamingControls();
         renderMessages();
-
-        const requestMessages = conversation.messages
-            .filter((message) => message.id !== assistant.id && message.content && message.status !== "error")
-            .map((message) => ({ role: message.role, content: message.content }));
+        let assistant = { id: `streaming-${Date.now()}`, role: "assistant", content: "", reasoning: "", provider: conversation.provider, model: conversation.model, status: "streaming" };
+        if (!regenerateMessageId && userContent) {
+            conversation.messages.push({ id: createId(), role: "user", content: userContent, createdAt: Date.now() });
+        } else {
+            conversation.messages = conversation.messages.filter((message) => message.id !== regenerateMessageId);
+        }
+        conversation.messages.push(assistant);
+        renderMessages();
 
         try {
-            const response = await fetch(CHAT_ENDPOINT, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
-                body: JSON.stringify({
-                    provider: conversation.provider,
-                    model: conversation.model,
-                    messages: requestMessages,
-                    stream: true
-                }),
-                signal: state.controller.signal
-            });
+            requestOptions.signal = state.controller.signal;
+            const response = await fetch(endpoint, requestOptions);
             if (!response.ok) {
                 throw new Error(await responseError(response));
             }
@@ -464,6 +450,7 @@
                 const chunk = extractChunk(data);
                 assistant.reasoning += chunk.reasoning;
                 assistant.content += chunk.content;
+                assistant.status = "streaming";
                 updateMessageElement(assistant);
             });
             assistant.status = "done";
@@ -480,10 +467,8 @@
         } finally {
             state.streaming = false;
             state.controller = null;
-            conversation.updatedAt = Date.now();
-            persist();
+            await reloadConversations();
             updateStreamingControls();
-            renderSessions();
             renderMessages();
         }
     }
@@ -690,36 +675,15 @@
             .replace(/'/g, "&#039;");
     }
 
-    function makeTitle(content) {
-        const normalized = content.replace(/\s+/g, " ").trim();
-        return normalized.length > 26 ? `${normalized.slice(0, 26)}…` : normalized;
-    }
-
-    function loadConversations() {
-        try {
-            const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-            if (!Array.isArray(parsed)) return [];
-            return parsed.filter(isValidConversation).map((conversation) => ({
-                ...conversation,
-                messages: conversation.messages.map((message) => ({ ...message, status: message.status === "streaming" ? "done" : message.status }))
-            }));
-        } catch (ignored) {
-            return [];
-        }
-    }
-
-    function isValidConversation(value) {
-        return value && typeof value.id === "string" && Array.isArray(value.messages)
-            && typeof value.provider === "string" && typeof value.model === "string";
-    }
-
-    function persist() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state.conversations));
-            localStorage.setItem(`${STORAGE_KEY}.active`, state.activeId);
-        } catch (error) {
-            showToast("本地存储空间不足，会话可能无法保存");
-        }
+    async function requestJson(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+        });
+        if (!response.ok) throw new Error(await responseError(response));
+        const result = await response.json();
+        if (result && result.success === false) throw new Error(result.message || "请求失败");
+        return result ? result.data : null;
     }
 
     async function responseError(response) {
