@@ -43,7 +43,7 @@ public class AiChatService {
             builder.topP(request.getTopP());
         }
         if (request.getMaxTokens() != null) {
-            builder.maxTokens(request.getMaxTokens());
+            setMaxTokens(builder, request.getMaxTokens(), provider, request.getModel());
         }
 
         try {
@@ -70,7 +70,7 @@ public class AiChatService {
             builder.topP(request.getTopP());
         }
         if (request.getMaxTokens() != null) {
-            builder.maxTokens(request.getMaxTokens());
+            setMaxTokens(builder, request.getMaxTokens(), provider, request.getModel());
         }
 
         try {
@@ -93,6 +93,16 @@ public class AiChatService {
     private String normalizeProvider(String provider) {
         String normalized = provider.trim().toLowerCase(Locale.ROOT);
         return "dashscope".equals(normalized) ? "qwen" : normalized;
+    }
+
+    private void setMaxTokens(ChatCompletion.ChatCompletionBuilder builder, Integer maxTokens,
+                              String provider, String model) {
+        if ("openai".equals(provider)
+                && model.trim().toLowerCase(Locale.ROOT).startsWith("gpt-5.6")) {
+            builder.maxCompletionTokens(maxTokens);
+            return;
+        }
+        builder.maxTokens(maxTokens);
     }
 
     private void validate(AiChatRequest request, boolean stream) {

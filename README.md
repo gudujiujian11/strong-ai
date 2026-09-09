@@ -38,7 +38,17 @@ http://localhost:11028/doc.html
 
 ### AI 聊天
 
-AI 调用由 `ai4j-spring-boot-starter` 自动装配。`bootstrap.yml` 的 `ai.platforms` 以 `id` 作为接口的 `provider`，以 `platform` 指定模型厂商实现。密钥必须通过环境变量或 Nacos 密文配置注入。
+AI 调用由 `ai4j-spring-boot-starter` 自动装配。`bootstrap.yml` 的 `ai.platforms` 以 `id` 作为接口的 `provider`，以 `platform` 指定模型厂商实现。密钥必须通过环境变量或 Nacos 密文配置注入。OpenAI 使用 `OPENAI_API_KEY`，可通过 `OPENAI_API_HOST`、`OPENAI_CHAT_COMPLETION_URL` 和 `OPENAI_RESPONSES_URL` 覆盖默认端点。
+
+GPT-5.6：
+
+```bash
+curl -X POST http://localhost:11028/api/ai/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"openai","model":"gpt-5.6-sol","messages":[{"role":"user","content":"你好"}]}'
+```
+
+DeepSeek：
 
 ```bash
 curl -X POST http://localhost:11028/api/ai/chat \

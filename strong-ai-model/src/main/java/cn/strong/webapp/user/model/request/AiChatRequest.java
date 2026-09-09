@@ -12,10 +12,10 @@ import java.util.List;
 @ApiModel("AI聊天请求")
 public class AiChatRequest implements Serializable {
 
-    @ApiModelProperty(value = "模型厂商: doubao、qwen 或 deepseek", example = "deepseek", required = true)
+    @ApiModelProperty(value = "模型厂商: openai、doubao、qwen 或 deepseek", example = "openai", required = true)
     private String provider;
 
-    @ApiModelProperty(value = "模型名/豆包接入点", example = "ep-20250101000000-xxxxx", required = true)
+    @ApiModelProperty(value = "模型名/豆包接入点", example = "gpt-5.6-sol", required = true)
     private String model;
 
     @ApiModelProperty(value = "上下文消息", required = true)

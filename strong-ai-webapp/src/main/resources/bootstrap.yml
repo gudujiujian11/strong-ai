@@ -64,6 +64,12 @@ strong:
 # API Key 仅从环境变量或 Nacos 密文配置获取，禁止提交到仓库。
 ai:
   platforms:
+    - id: openai
+      platform: openai
+      api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
+      api-host: ${OPENAI_API_HOST:https://token.dialoguedui.com}
+      chat-completion-url: ${OPENAI_CHAT_COMPLETION_URL:/v1/chat/completions}
+      responses-url: ${OPENAI_RESPONSES_URL:/v1/responses}
     - id: doubao
       platform: doubao
       api-key: ${DOUBAO_API_KEY:}

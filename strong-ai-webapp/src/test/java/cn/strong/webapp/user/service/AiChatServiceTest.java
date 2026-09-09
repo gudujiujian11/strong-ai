@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -26,6 +27,27 @@ import static org.mockito.Mockito.when;
 class AiChatServiceTest {
 
     @Test
+    void shouldRouteGpt56ToConfiguredOpenAiService() throws Exception {
+        AiServiceRegistry registry = mock(AiServiceRegistry.class);
+        IChatService chatService = mock(IChatService.class);
+        when(registry.contains("openai")).thenReturn(true);
+        when(registry.getChatService("openai")).thenReturn(chatService);
+        when(chatService.chatCompletion(any(ChatCompletion.class))).thenReturn(chatResponse("gpt-5.6-sol"));
+
+        AiChatRequest request = chatRequest("openai", "gpt-5.6-sol");
+        request.setMaxTokens(2048);
+        AiChatResponse response = new AiChatService(registry).chat(request);
+
+        assertEquals("openai", response.getProvider());
+        assertEquals("gpt-5.6-sol", response.getModel());
+        ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
+        verify(chatService).chatCompletion(captor.capture());
+        assertEquals("gpt-5.6-sol", captor.getValue().getModel());
+        assertEquals(2048, captor.getValue().getMaxCompletionTokens());
+        assertNull(captor.getValue().getMaxTokens());
+    }
+
+    @Test
     void shouldRouteDashscopeAliasToConfiguredQwenService() throws Exception {
         AiServiceRegistry registry = mock(AiServiceRegistry.class);
         IChatService chatService = mock(IChatService.class);
@@ -33,7 +55,9 @@ class AiChatServiceTest {
         when(registry.getChatService("qwen")).thenReturn(chatService);
         when(chatService.chatCompletion(any(ChatCompletion.class))).thenReturn(chatResponse());
 
-        AiChatResponse response = new AiChatService(registry).chat(chatRequest("dashscope"));
+        AiChatRequest request = chatRequest("dashscope", "deepseek-chat");
+        request.setMaxTokens(1024);
+        AiChatResponse response = new AiChatService(registry).chat(request);
 
         assertEquals("qwen", response.getProvider());
         assertEquals("deepseek-chat", response.getModel());
@@ -41,6 +65,8 @@ class AiChatServiceTest {
         ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
         verify(chatService).chatCompletion(captor.capture());
         assertEquals("deepseek-chat", captor.getValue().getModel());
+        assertEquals(1024, captor.getValue().getMaxTokens());
+        assertNull(captor.getValue().getMaxCompletionTokens());
         assertEquals(Boolean.FALSE, captor.getValue().getStream());
     }
 
@@ -50,7 +76,7 @@ class AiChatServiceTest {
         when(registry.contains("unknown")).thenReturn(false);
 
         assertThrows(ParamValiateException.class,
-                () -> new AiChatService(registry).chat(chatRequest("unknown")));
+                () -> new AiChatService(registry).chat(chatRequest("unknown", "deepseek-chat")));
     }
 
     @Test
@@ -61,7 +87,7 @@ class AiChatServiceTest {
         when(registry.getChatService("deepseek")).thenReturn(chatService);
         doNothing().when(chatService).chatCompletionStream(any(ChatCompletion.class), any(SseListener.class));
 
-        new AiChatService(registry).chatStream(chatRequest("deepseek"), new SseListener() {
+        new AiChatService(registry).chatStream(chatRequest("deepseek", "deepseek-chat"), new SseListener() {
             @Override
             protected void send() {
             }
@@ -72,10 +98,10 @@ class AiChatServiceTest {
         assertEquals(Boolean.TRUE, captor.getValue().getStream());
     }
 
-    private AiChatRequest chatRequest(String provider) {
+    private AiChatRequest chatRequest(String provider, String model) {
         AiChatRequest request = new AiChatRequest();
         request.setProvider(provider);
-        request.setModel("deepseek-chat");
+        request.setModel(model);
         AiChatMessageRequest message = new AiChatMessageRequest();
         message.setRole("user");
         message.setContent("你好");
@@ -84,13 +110,17 @@ class AiChatServiceTest {
     }
 
     private ChatCompletionResponse chatResponse() {
+        return chatResponse("deepseek-chat");
+    }
+
+    private ChatCompletionResponse chatResponse(String model) {
         Choice choice = new Choice();
         choice.setMessage(new ChatMessage("assistant", "你好"));
         choice.setFinishReason("stop");
 
         ChatCompletionResponse response = new ChatCompletionResponse();
         response.setId("chatcmpl-1");
-        response.setModel("deepseek-chat");
+        response.setModel(model);
         response.setChoices(Collections.singletonList(choice));
         return response;
     }
