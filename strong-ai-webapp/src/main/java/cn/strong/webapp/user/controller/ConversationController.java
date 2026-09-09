@@ -60,13 +60,19 @@ public class ConversationController {
     @PostMapping
     @ApiOperation("创建会话")
     public Result<Conversation> create(@RequestBody ConversationCreateRequest request) {
-        return Result.ok(conversationService.create(request.getProvider(), request.getModel()));
+        Conversation conversation = conversationService.create(request.getProvider(), request.getModel());
+        if (request.getDeepThinking() != null) {
+            conversation = conversationService.updateModel(conversation.getId(), conversation.getProvider(),
+                    conversation.getModel(), request.getDeepThinking());
+        }
+        return Result.ok(conversation);
     }
 
     @PutMapping("/{id}")
     @ApiOperation("更新会话使用的模型")
     public Result<Conversation> update(@PathVariable("id") String id, @RequestBody ConversationUpdateRequest request) {
-        return Result.ok(conversationService.updateModel(id, request.getProvider(), request.getModel()));
+        return Result.ok(conversationService.updateModel(id, request.getProvider(), request.getModel(),
+                request.getDeepThinking()));
     }
 
     @DeleteMapping("/{id}")

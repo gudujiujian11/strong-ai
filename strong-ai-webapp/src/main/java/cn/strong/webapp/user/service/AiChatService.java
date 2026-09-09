@@ -45,6 +45,7 @@ public class AiChatService {
         if (request.getMaxTokens() != null) {
             setMaxTokens(builder, request.getMaxTokens(), provider, request.getModel());
         }
+        setDeepThinking(builder, request, provider);
 
         try {
             ChatCompletionResponse response = chatService.chatCompletion(builder.build());
@@ -72,6 +73,7 @@ public class AiChatService {
         if (request.getMaxTokens() != null) {
             setMaxTokens(builder, request.getMaxTokens(), provider, request.getModel());
         }
+        setDeepThinking(builder, request, provider);
 
         try {
             chatService.chatCompletionStream(builder.build(), listener);
@@ -103,6 +105,14 @@ public class AiChatService {
             return;
         }
         builder.maxTokens(maxTokens);
+    }
+
+    private void setDeepThinking(ChatCompletion.ChatCompletionBuilder builder, AiChatRequest request,
+                                 String provider) {
+        if ("openai".equals(provider)
+                && request.getModel().trim().toLowerCase(Locale.ROOT).startsWith("gpt-5.6")) {
+            builder.parameter("reasoning_effort", Boolean.TRUE.equals(request.getDeepThinking()) ? "medium" : "none");
+        }
     }
 
     private void validate(AiChatRequest request, boolean stream) {

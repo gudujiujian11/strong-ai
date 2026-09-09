@@ -13,4 +13,7 @@ public class ConversationCreateRequest implements Serializable {
     private String provider;
     @ApiModelProperty(value = "模型名称", example = "gpt-5.6-sol")
     private String model;
+
+    @ApiModelProperty("是否启用深度思考")
+    private Boolean deepThinking = Boolean.FALSE;
 }

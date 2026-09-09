@@ -18,6 +18,9 @@ public class AiChatRequest implements Serializable {
     @ApiModelProperty(value = "模型名/豆包接入点", example = "gpt-5.6-sol", required = true)
     private String model;
 
+    @ApiModelProperty("是否启用模型深度思考")
+    private Boolean deepThinking = Boolean.FALSE;
+
     @ApiModelProperty(value = "上下文消息", required = true)
     private List<AiChatMessageRequest> messages;
 

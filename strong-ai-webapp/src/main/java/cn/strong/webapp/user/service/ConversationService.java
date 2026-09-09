@@ -38,16 +38,24 @@ public class ConversationService {
         conversation.setTitle(DEFAULT_TITLE);
         conversation.setProvider(provider.trim());
         conversation.setModel(model.trim());
+        conversation.setDeepThinking(Boolean.FALSE);
         conversation.setCreatedAt(now);
         conversation.setUpdatedAt(now);
         return conversationStore.save(conversation);
     }
 
     public synchronized Conversation updateModel(String id, String provider, String model) {
+        return updateModel(id, provider, model, null);
+    }
+
+    public synchronized Conversation updateModel(String id, String provider, String model, Boolean deepThinking) {
         requireProviderAndModel(provider, model);
         Conversation conversation = load(id);
         conversation.setProvider(provider.trim());
         conversation.setModel(model.trim());
+        if (deepThinking != null) {
+            conversation.setDeepThinking(deepThinking);
+        }
         conversation.setUpdatedAt(System.currentTimeMillis());
         return conversationStore.save(conversation);
     }
@@ -114,6 +122,7 @@ public class ConversationService {
         AiChatRequest request = new AiChatRequest();
         request.setProvider(conversation.getProvider());
         request.setModel(conversation.getModel());
+        request.setDeepThinking(conversation.getDeepThinking());
         List<AiChatMessageRequest> messages = new ArrayList<>();
         for (ConversationMessage message : conversation.getMessages()) {
             if (!isBlank(message.getContent())) {

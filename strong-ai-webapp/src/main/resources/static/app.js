@@ -11,6 +11,7 @@
             mark: "O",
             models: [
                 { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", description: "复杂推理与代码任务" },
+                { id: "gpt-5.6-luna", name: "GPT-5.6 Luna", description: "快速推理与日常任务" },
                 { id: "gpt-4o", name: "GPT-4o", description: "通用多模态模型" },
                 { id: "gpt-4o-mini", name: "GPT-4o mini", description: "快速、轻量的日常问答" }
             ]
@@ -46,7 +47,7 @@
             "sessionSearch", "sessionList", "modelTrigger", "modelMenu", "providerMark",
             "selectedModelName", "selectedProviderName", "clearChatButton", "themeButton",
             "chatViewport", "messageColumn", "composer", "messageInput", "composerModelChip",
-            "characterCount", "sendButton", "stopButton", "toast"
+            "characterCount", "thinkingToggle", "sendButton", "stopButton", "toast"
         ].forEach((id) => { elements[id] = document.getElementById(id); });
 
         applyInitialTheme();
@@ -75,6 +76,7 @@
         elements.modelMenu.addEventListener("click", handleModelSelection);
         elements.clearChatButton.addEventListener("click", clearCurrentConversation);
         elements.themeButton.addEventListener("click", toggleTheme);
+        elements.thinkingToggle.addEventListener("click", toggleDeepThinking);
         elements.composer.addEventListener("submit", handleSubmit);
         elements.messageInput.addEventListener("input", updateComposer);
         elements.messageInput.addEventListener("keydown", handleComposerKeydown);
@@ -286,7 +288,8 @@
         const conversation = activeConversation();
         const updated = await requestJson(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}`, {
             method: "PUT",
-            body: JSON.stringify({ provider: option.dataset.provider, model: option.dataset.model })
+            body: JSON.stringify({ provider: option.dataset.provider, model: option.dataset.model,
+                deepThinking: conversation.deepThinking })
         });
         replaceConversation(updated);
         renderSelectedModel();
@@ -302,6 +305,33 @@
         elements.selectedModelName.textContent = modelInfo.model.name;
         elements.selectedProviderName.textContent = modelInfo.group.name;
         elements.composerModelChip.textContent = `${modelInfo.group.name} · ${modelInfo.model.name}`;
+        renderDeepThinkingToggle(conversation);
+    }
+
+    function renderDeepThinkingToggle(conversation) {
+        const supported = supportsDeepThinking(conversation);
+        const enabled = Boolean(conversation.deepThinking);
+        elements.thinkingToggle.hidden = !supported;
+        elements.thinkingToggle.disabled = state.streaming;
+        elements.thinkingToggle.classList.toggle("active", enabled);
+        elements.thinkingToggle.setAttribute("aria-pressed", String(enabled));
+        elements.thinkingToggle.title = enabled ? "关闭深度思考" : "开启深度思考";
+    }
+
+    function supportsDeepThinking(conversation) {
+        return conversation.provider === "openai" && conversation.model.startsWith("gpt-5.6");
+    }
+
+    async function toggleDeepThinking() {
+        const conversation = activeConversation();
+        if (!conversation || state.streaming || !supportsDeepThinking(conversation)) return;
+        const updated = await requestJson(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}`, {
+            method: "PUT",
+            body: JSON.stringify({ provider: conversation.provider, model: conversation.model,
+                deepThinking: !conversation.deepThinking })
+        });
+        replaceConversation(updated);
+        renderSelectedModel();
     }
 
     function findModel(provider, modelId) {
@@ -553,6 +583,7 @@
         elements.stopButton.hidden = !state.streaming;
         elements.messageInput.disabled = state.streaming;
         elements.modelTrigger.disabled = state.streaming;
+        renderDeepThinkingToggle(activeConversation());
         updateComposer();
         refreshIcons();
     }

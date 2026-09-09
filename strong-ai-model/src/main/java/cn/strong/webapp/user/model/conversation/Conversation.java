@@ -19,6 +19,8 @@ public class Conversation implements Serializable {
     private String provider;
     @ApiModelProperty("模型名称")
     private String model;
+    @ApiModelProperty("是否启用深度思考")
+    private Boolean deepThinking = Boolean.FALSE;
     @ApiModelProperty("会话消息")
     private List<ConversationMessage> messages = new ArrayList<>();
     @ApiModelProperty("创建时间戳")

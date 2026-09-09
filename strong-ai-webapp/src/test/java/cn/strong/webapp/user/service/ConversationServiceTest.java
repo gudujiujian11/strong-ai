@@ -48,6 +48,18 @@ class ConversationServiceTest {
     }
 
     @Test
+    void shouldPersistDeepThinkingAndIncludeItInTheChatRequest() {
+        Conversation conversation = conversationService.create("openai", "gpt-5.6-luna");
+
+        Conversation updated = conversationService.updateModel(conversation.getId(), "openai", "gpt-5.6-luna", true);
+        AiChatRequest request = conversationService.prepareChatRequest(conversation.getId(), "分析这个问题");
+
+        assertEquals(Boolean.TRUE, updated.getDeepThinking());
+        assertEquals(Boolean.TRUE, request.getDeepThinking());
+        assertEquals(Boolean.TRUE, conversationService.get(conversation.getId()).getDeepThinking());
+    }
+
+    @Test
     void shouldRemoveSupersededAssistantReplyBeforeRegeneration() {
         Conversation conversation = conversationService.create("deepseek", "deepseek-chat");
         conversationService.prepareChatRequest(conversation.getId(), "第一个问题");

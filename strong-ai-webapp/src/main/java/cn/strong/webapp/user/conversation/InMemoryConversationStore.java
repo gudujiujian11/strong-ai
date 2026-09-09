@@ -49,6 +49,7 @@ public class InMemoryConversationStore implements ConversationStore {
         target.setTitle(source.getTitle());
         target.setProvider(source.getProvider());
         target.setModel(source.getModel());
+        target.setDeepThinking(source.getDeepThinking());
         target.setCreatedAt(source.getCreatedAt());
         target.setUpdatedAt(source.getUpdatedAt());
         List<ConversationMessage> messages = new ArrayList<>();

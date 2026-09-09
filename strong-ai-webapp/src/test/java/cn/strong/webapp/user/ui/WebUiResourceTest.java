@@ -19,7 +19,10 @@ class WebUiResourceTest {
 
         assertTrue(html.contains("id=\"sessionList\""));
         assertTrue(html.contains("id=\"modelMenu\""));
+        assertTrue(html.contains("id=\"thinkingToggle\""));
         assertTrue(javascript.contains("/api/conversations"));
+        assertTrue(javascript.contains("gpt-5.6-luna"));
+        assertTrue(javascript.contains("deepThinking"));
         assertTrue(javascript.contains("provider: \"openai\""));
         assertTrue(javascript.contains("provider: \"deepseek\""));
         assertTrue(javascript.contains("response.body"));

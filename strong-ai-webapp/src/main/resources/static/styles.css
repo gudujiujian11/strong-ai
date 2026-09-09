@@ -871,6 +871,45 @@ a {
     white-space: nowrap;
 }
 
+.thinking-toggle {
+    display: inline-flex;
+    height: 28px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 10px;
+    transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.thinking-toggle svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 1.8;
+}
+
+.thinking-toggle:hover:not(:disabled) {
+    border-color: var(--line-strong);
+    background: var(--surface-hover);
+    color: var(--ink);
+}
+
+.thinking-toggle.active {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.thinking-toggle:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
 .character-count {
     margin-left: auto;
     color: var(--subtle);
@@ -1061,7 +1100,15 @@ a {
     }
 
     .model-chip {
-        max-width: 130px;
+        max-width: 100px;
+    }
+
+    .composer-row {
+        gap: 6px;
+    }
+
+    .thinking-toggle {
+        padding: 0 6px;
     }
 }
 

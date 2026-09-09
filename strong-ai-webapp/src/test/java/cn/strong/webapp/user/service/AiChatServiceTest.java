@@ -35,6 +35,7 @@ class AiChatServiceTest {
         when(chatService.chatCompletion(any(ChatCompletion.class))).thenReturn(chatResponse("gpt-5.6-sol"));
 
         AiChatRequest request = chatRequest("openai", "gpt-5.6-sol");
+        request.setDeepThinking(Boolean.TRUE);
         request.setMaxTokens(2048);
         AiChatResponse response = new AiChatService(registry).chat(request);
 
@@ -45,6 +46,24 @@ class AiChatServiceTest {
         assertEquals("gpt-5.6-sol", captor.getValue().getModel());
         assertEquals(2048, captor.getValue().getMaxCompletionTokens());
         assertNull(captor.getValue().getMaxTokens());
+        assertEquals("medium", captor.getValue().getParameters().get("reasoning_effort"));
+    }
+
+    @Test
+    void shouldDisableDeepThinkingForGpt56() throws Exception {
+        AiServiceRegistry registry = mock(AiServiceRegistry.class);
+        IChatService chatService = mock(IChatService.class);
+        when(registry.contains("openai")).thenReturn(true);
+        when(registry.getChatService("openai")).thenReturn(chatService);
+        when(chatService.chatCompletion(any(ChatCompletion.class))).thenReturn(chatResponse("gpt-5.6-luna"));
+
+        AiChatRequest request = chatRequest("openai", "gpt-5.6-luna");
+        request.setDeepThinking(Boolean.FALSE);
+        new AiChatService(registry).chat(request);
+
+        ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
+        verify(chatService).chatCompletion(captor.capture());
+        assertEquals("none", captor.getValue().getParameters().get("reasoning_effort"));
     }
 
     @Test
