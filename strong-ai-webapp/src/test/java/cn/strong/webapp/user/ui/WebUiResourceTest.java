@@ -43,6 +43,7 @@ class WebUiResourceTest {
         assertTrue(javascript.contains("/api/md-optimizer/validate"));
         assertTrue(javascript.contains("/api/md-optimizer/optimize"));
         assertTrue(styles.contains(".optimizer-shell"));
+        assertTrue(hasDeclaration(styles, ".result-empty[hidden], .result-summary[hidden]", "display", "none"));
     }
 
     @Test
