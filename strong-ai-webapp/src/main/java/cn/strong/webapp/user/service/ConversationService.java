@@ -108,12 +108,22 @@ public class ConversationService {
     }
 
     public synchronized Conversation appendAssistantReply(String id, String content, String reasoning) {
+        return appendAssistantReply(id, content, reasoning, null, null, null);
+    }
+
+    public synchronized Conversation appendAssistantReply(String id, String content, String reasoning,
+                                                           Long promptTokens, Long completionTokens,
+                                                           Long totalTokens) {
         Conversation conversation = load(id);
         if (isBlank(content) && isBlank(reasoning)) {
             return conversation;
         }
-        conversation.getMessages().add(message("assistant", content, reasoning,
-                conversation.getProvider(), conversation.getModel()));
+        ConversationMessage message = message("assistant", content, reasoning,
+                conversation.getProvider(), conversation.getModel());
+        message.setPromptTokens(promptTokens);
+        message.setCompletionTokens(completionTokens);
+        message.setTotalTokens(totalTokens);
+        conversation.getMessages().add(message);
         conversation.setUpdatedAt(System.currentTimeMillis());
         return conversationStore.save(conversation);
     }

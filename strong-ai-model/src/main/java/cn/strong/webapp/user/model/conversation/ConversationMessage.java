@@ -21,6 +21,12 @@ public class ConversationMessage implements Serializable {
     private String provider;
     @ApiModelProperty("生成消息的模型")
     private String model;
+    @ApiModelProperty("输入 token 数")
+    private Long promptTokens;
+    @ApiModelProperty("输出 token 数")
+    private Long completionTokens;
+    @ApiModelProperty("总 token 数")
+    private Long totalTokens;
     @ApiModelProperty("创建时间戳")
     private long createdAt;
 }

@@ -61,6 +61,9 @@ public class InMemoryConversationStore implements ConversationStore {
             targetMessage.setReasoning(sourceMessage.getReasoning());
             targetMessage.setProvider(sourceMessage.getProvider());
             targetMessage.setModel(sourceMessage.getModel());
+            targetMessage.setPromptTokens(sourceMessage.getPromptTokens());
+            targetMessage.setCompletionTokens(sourceMessage.getCompletionTokens());
+            targetMessage.setTotalTokens(sourceMessage.getTotalTokens());
             targetMessage.setCreatedAt(sourceMessage.getCreatedAt());
             messages.add(targetMessage);
         }

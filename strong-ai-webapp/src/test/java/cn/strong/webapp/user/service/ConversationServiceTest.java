@@ -32,7 +32,7 @@ class ConversationServiceTest {
         Conversation conversation = conversationService.create("openai", "gpt-5.6-sol");
 
         AiChatRequest request = conversationService.prepareChatRequest(conversation.getId(), "请介绍一下你自己");
-        conversationService.appendAssistantReply(conversation.getId(), "我是 Strong AI", "");
+        conversationService.appendAssistantReply(conversation.getId(), "我是 Strong AI", "", 12L, 8L, 20L);
 
         assertEquals("openai", request.getProvider());
         assertEquals("gpt-5.6-sol", request.getModel());
@@ -45,6 +45,9 @@ class ConversationServiceTest {
         assertEquals(2, saved.getMessages().size());
         assertEquals("assistant", saved.getMessages().get(1).getRole());
         assertEquals("我是 Strong AI", saved.getMessages().get(1).getContent());
+        assertEquals(12L, saved.getMessages().get(1).getPromptTokens());
+        assertEquals(8L, saved.getMessages().get(1).getCompletionTokens());
+        assertEquals(20L, saved.getMessages().get(1).getTotalTokens());
     }
 
     @Test

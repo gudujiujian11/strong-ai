@@ -11,11 +11,13 @@ import cn.strong.webapp.user.service.ConversationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lnyocly.ai4j.listener.SseListener;
+import io.github.lnyocly.ai4j.platform.openai.usage.Usage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -109,9 +111,12 @@ public class ConversationController {
         AtomicBoolean saved = new AtomicBoolean(false);
         StringBuilder content = new StringBuilder();
         StringBuilder reasoning = new StringBuilder();
+        AtomicReference<SseListener> listenerRef = new AtomicReference<>();
         Runnable saveReply = () -> {
             if (saved.compareAndSet(false, true)) {
-                conversationService.appendAssistantReply(conversationId, content.toString(), reasoning.toString());
+                Usage usage = listenerUsage(listenerRef.get());
+                conversationService.appendAssistantReply(conversationId, content.toString(), reasoning.toString(),
+                        usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
             }
         };
         SseListener listener = new SseListener() {
@@ -140,6 +145,7 @@ public class ConversationController {
                 }
             }
         };
+        listenerRef.set(listener);
 
         emitter.onCompletion(() -> {
             completed.set(true);
@@ -170,6 +176,11 @@ public class ConversationController {
             }
         });
         return emitter;
+    }
+
+    private Usage listenerUsage(SseListener listener) {
+        Usage usage = listener.getUsage();
+        return usage == null ? new Usage() : usage;
     }
 
     private StreamChunk readChunk(String raw) {
