@@ -31,6 +31,21 @@ class WebUiResourceTest {
     }
 
     @Test
+    void shouldPackageMarkdownOptimizerUiResources() throws IOException {
+        String html = resource("static/md-optimizer.html");
+        String javascript = resource("static/md-optimizer.js");
+        String styles = resource("static/md-optimizer.css");
+
+        assertTrue(html.contains("id=\"markdownInput\""));
+        assertTrue(html.contains("id=\"optimizeButton\""));
+        assertTrue(html.contains("id=\"fileInput\""));
+        assertTrue(html.contains("id=\"modelSelect\""));
+        assertTrue(javascript.contains("/api/md-optimizer/validate"));
+        assertTrue(javascript.contains("/api/md-optimizer/optimize"));
+        assertTrue(styles.contains(".optimizer-shell"));
+    }
+
+    @Test
     void shouldKeepTheChatViewportScrollableWhenMessagesOverflow() throws IOException {
         String styles = resource("static/styles.css");
 

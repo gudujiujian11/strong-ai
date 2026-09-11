@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f5f1">
+    <title>Markdown 优化台 · Strong AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/md-optimizer.css">
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/md-optimizer.js" defer></script>
+</head>
+<body>
+<div class="optimizer-shell">
+    <header class="optimizer-topbar">
+        <a class="optimizer-brand" href="/" aria-label="返回 Strong AI 聊天">
+            <span class="optimizer-brand-mark">S</span>
+            <span>Strong AI <em>/</em> MD 优化台</span>
+        </a>
+        <div class="optimizer-top-actions">
+            <a class="quiet-link" href="/" title="返回聊天"><i data-lucide="message-square"></i><span>聊天</span></a>
+            <button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换主题"><i data-lucide="moon"></i></button>
+        </div>
+    </header>
+
+    <main class="optimizer-main">
+        <section class="optimizer-intro">
+            <div>
+                <p class="eyebrow">DOCUMENT WORKBENCH <span>01</span></p>
+                <h1>让 Markdown<br><span>更清晰，更可靠。</span></h1>
+                <p class="intro-copy">保留技术事实，修复结构与表达。上传文档，或从一段文字开始。</p>
+            </div>
+            <div class="intro-note">
+                <span class="live-dot"></span>
+                <span>临时处理 · 不保存原文</span>
+            </div>
+        </section>
+
+        <section class="optimizer-workspace" aria-label="Markdown 优化工作区">
+            <aside class="control-panel">
+                <div class="panel-heading">
+                    <span class="panel-index">A</span>
+                    <div><p class="eyebrow">SOURCE</p><h2>输入内容</h2></div>
+                    <span class="content-count" id="contentCount">0 字</span>
+                </div>
+
+                <div class="source-tabs" role="tablist" aria-label="输入方式">
+                    <button class="source-tab active" type="button" data-source-tab="text" role="tab" aria-selected="true"><i data-lucide="text-cursor-input"></i>直接输入</button>
+                    <button class="source-tab" type="button" data-source-tab="file" role="tab" aria-selected="false"><i data-lucide="upload"></i>上传文件</button>
+                </div>
+
+                <label class="file-drop" id="fileDrop" for="fileInput" hidden>
+                    <i data-lucide="file-up"></i>
+                    <strong>拖拽 .md 文件到这里</strong>
+                    <span>或点击选择文件 · 最大 120,000 字符</span>
+                    <input id="fileInput" type="file" accept=".md,.markdown,text/markdown">
+                    <small id="fileName"></small>
+                </label>
+
+                <textarea id="markdownInput" class="markdown-input" maxlength="120000" spellcheck="false" placeholder="# 输入或粘贴 Markdown 文档\n\n从一段文字开始，右侧会生成更清晰的版本。"></textarea>
+                <p class="validation-message" id="validationMessage" role="status"></p>
+
+                <div class="settings-block">
+                    <div class="settings-heading"><span class="eyebrow">OPTIMIZE AS</span><span class="settings-rule"></span></div>
+                    <div class="mode-grid" role="radiogroup" aria-label="优化模式">
+                        <button class="mode-card active" type="button" data-mode="format" role="radio" aria-checked="true"><i data-lucide="wand-sparkles"></i><span><strong>格式整理</strong><small>不改技术事实</small></span></button>
+                        <button class="mode-card" type="button" data-mode="polish" role="radio" aria-checked="false"><i data-lucide="feather"></i><span><strong>内容润色</strong><small>修复表达与重复</small></span></button>
+                        <button class="mode-card" type="button" data-mode="restructure" role="radio" aria-checked="false"><i data-lucide="spline"></i><span><strong>结构重组</strong><small>重排层级与要点</small></span></button>
+                    </div>
+                    <div class="field-grid">
+                        <label class="field"><span>文档类型</span><select id="documentType"><option value="通用 Markdown 文档">通用 Markdown 文档</option><option value="README">README</option><option value="API 接口文档">API 接口文档</option><option value="技术方案">技术方案</option><option value="产品需求文档">产品需求文档</option><option value="会议纪要">会议纪要</option></select></label>
+                        <label class="field"><span>目标读者</span><select id="audience"><option value="通用读者">通用读者</option><option value="开发者">开发者</option><option value="产品和业务团队">产品和业务团队</option><option value="管理者">管理者</option><option value="外部客户">外部客户</option></select></label>
+                    </div>
+                    <label class="field model-field"><span>AI 模型</span><select id="modelSelect"><option value="openai:gpt-5.6-sol">GPT-5.6 Sol · OpenAI</option><option value="openai:gpt-5.6-luna">GPT-5.6 Luna · OpenAI</option><option value="deepseek:deepseek-chat">DeepSeek Chat</option><option value="deepseek:deepseek-reasoner">DeepSeek Reasoner</option></select></label>
+                    <div class="protect-row">
+                        <label><input id="preserveCode" type="checkbox" checked><span>保留代码块</span></label>
+                        <label><input id="preserveLinks" type="checkbox" checked><span>保留链接</span></label>
+                    </div>
+                </div>
+
+                <button class="optimize-button" id="optimizeButton" type="button" disabled><i data-lucide="sparkles"></i><span>开始优化</span><kbd>⌘ ↵</kbd></button>
+            </aside>
+
+            <section class="result-panel">
+                <div class="panel-heading result-heading">
+                    <span class="panel-index">B</span>
+                    <div><p class="eyebrow">OUTPUT</p><h2>优化结果</h2></div>
+                    <span class="result-state" id="resultState"><span class="state-dot"></span>等待输入</span>
+                </div>
+                <div class="result-toolbar">
+                    <div class="result-tabs" role="tablist" aria-label="结果视图">
+                        <button class="result-tab active" type="button" data-result-tab="preview" role="tab" aria-selected="true">预览</button>
+                        <button class="result-tab" type="button" data-result-tab="diff" role="tab" aria-selected="false">Diff</button>
+                        <button class="result-tab" type="button" data-result-tab="source" role="tab" aria-selected="false">Markdown</button>
+                    </div>
+                    <div class="result-actions">
+                        <button class="icon-button" id="copyButton" type="button" aria-label="复制优化结果" title="复制结果" disabled><i data-lucide="copy"></i></button>
+                        <button class="icon-button" id="downloadButton" type="button" aria-label="下载 Markdown 文件" title="下载 Markdown" disabled><i data-lucide="download"></i></button>
+                    </div>
+                </div>
+                <div class="result-viewport" id="resultViewport">
+                    <div class="result-empty" id="resultEmpty"><div class="empty-mark"><i data-lucide="scan-text"></i></div><h3>结果会出现在这里</h3><p>输入内容后，选择一种优化方式开始。</p></div>
+                    <article class="markdown-preview" id="markdownPreview" hidden></article>
+                    <pre class="diff-view" id="diffView" hidden></pre>
+                    <pre class="source-view" id="sourceView" hidden></pre>
+                </div>
+                <div class="result-summary" id="resultSummary" hidden><div><span class="eyebrow">CHANGE LOG</span><p id="summaryText"></p></div><button class="retry-button" id="retryButton" type="button"><i data-lucide="refresh-cw"></i>重新生成</button></div>
+            </section>
+        </section>
+    </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

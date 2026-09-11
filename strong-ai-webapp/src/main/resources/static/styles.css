@@ -210,6 +210,41 @@ a {
     transform: translateY(1px);
 }
 
+.module-link {
+    display: flex;
+    height: 38px;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 12px;
+    padding: 0 11px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.module-link:hover {
+    border-color: var(--line);
+    background: var(--surface);
+    color: var(--ink);
+}
+
+.module-link svg {
+    width: 17px;
+    height: 17px;
+    stroke-width: 1.8;
+}
+
+.module-link svg:last-child {
+    width: 14px;
+    height: 14px;
+    margin-left: auto;
+    color: var(--subtle);
+}
+
 .new-chat-button kbd {
     margin-left: auto;
     color: var(--subtle);
