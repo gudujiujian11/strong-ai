@@ -55,6 +55,44 @@ public class AiChatService {
         }
     }
 
+    /** 调用支持 image_url 多模态内容的聊天模型。图片仅以请求内 data URL 传递。 */
+    public AiChatResponse chatWithImage(String provider, String model, String systemPrompt,
+                                        String userPrompt, String imageDataUrl, Integer maxTokens) {
+        if (isBlank(provider)) {
+            throw new ParamValiateException("provider 不能为空");
+        }
+        if (isBlank(model)) {
+            throw new ParamValiateException("model 不能为空");
+        }
+        if (isBlank(systemPrompt) || isBlank(userPrompt)) {
+            throw new ParamValiateException("多模态提示词不能为空");
+        }
+        if (isBlank(imageDataUrl) || !imageDataUrl.startsWith("data:image/")) {
+            throw new ParamValiateException("图片内容格式无效");
+        }
+        String normalizedProvider = normalizeProvider(provider);
+        IChatService chatService = service(normalizedProvider);
+        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
+                .model(model.trim())
+                .messages(java.util.Arrays.asList(
+                        ChatMessage.withSystem(systemPrompt),
+                        ChatMessage.withUser(userPrompt, imageDataUrl)))
+                .stream(Boolean.FALSE);
+        if (maxTokens != null) {
+            setMaxTokens(builder, maxTokens, normalizedProvider, model);
+        }
+        AiChatRequest request = new AiChatRequest();
+        request.setProvider(normalizedProvider);
+        request.setModel(model);
+        request.setDeepThinking(Boolean.FALSE);
+        setDeepThinking(builder, request, normalizedProvider);
+        try {
+            return toResponse(normalizedProvider, chatService.chatCompletion(builder.build()));
+        } catch (Exception ex) {
+            throw new IllegalStateException("调用 " + normalizedProvider + " 多模态模型失败", ex);
+        }
+    }
+
     public void chatStream(AiChatRequest request, SseListener listener) {
         validate(request, true);
         String provider = normalizeProvider(request.getProvider());

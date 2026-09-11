@@ -67,6 +67,9 @@ button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-
 .file-drop span { font-size: 11px; }
 .file-drop input { display: none; }
 .file-drop small { max-width: 90%; overflow: hidden; color: var(--accent); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.image-drop { margin-bottom: 12px; }
+.image-drop img { display: block; max-width: 100%; max-height: 180px; margin: 4px 0; border: 1px solid var(--line); border-radius: 5px; object-fit: contain; }
+.image-parse-button { margin-top: 23px; }
 .markdown-input { display: block; width: 100%; min-height: 210px; resize: vertical; padding: 15px; border: 1px solid var(--line); border-radius: 7px; outline: 0; background: var(--surface); color: var(--ink); font: 12px/1.75 var(--font-mono); }
 .markdown-input:focus { border-color: var(--accent); }
 .markdown-input.file-mode { margin-top: 12px; }

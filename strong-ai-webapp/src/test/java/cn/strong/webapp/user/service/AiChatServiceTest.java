@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doNothing;
@@ -115,6 +116,28 @@ class AiChatServiceTest {
         ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
         verify(chatService).chatCompletionStream(captor.capture(), any(SseListener.class));
         assertEquals(Boolean.TRUE, captor.getValue().getStream());
+    }
+
+    @Test
+    void shouldCreateMultimodalImageRequest() throws Exception {
+        AiServiceRegistry registry = mock(AiServiceRegistry.class);
+        IChatService chatService = mock(IChatService.class);
+        when(registry.contains("openai")).thenReturn(true);
+        when(registry.getChatService("openai")).thenReturn(chatService);
+        when(chatService.chatCompletion(any(ChatCompletion.class))).thenReturn(chatResponse("gpt-5.6-sol"));
+
+        AiChatResponse response = new AiChatService(registry).chatWithImage(
+                "openai", "gpt-5.6-sol", "system", "解析图片并输出 Markdown",
+                "data:image/png;base64,ZmFrZQ==", 1024);
+
+        assertEquals("openai", response.getProvider());
+        ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
+        verify(chatService).chatCompletion(captor.capture());
+        ChatCompletion completion = captor.getValue();
+        assertEquals(1024, completion.getMaxCompletionTokens());
+        assertEquals(2, completion.getMessages().size());
+        assertTrue(completion.getMessages().get(1).getContent().getMultiModals().toString()
+                .contains("data:image/png;base64,ZmFrZQ=="));
     }
 
     private AiChatRequest chatRequest(String provider, String model) {

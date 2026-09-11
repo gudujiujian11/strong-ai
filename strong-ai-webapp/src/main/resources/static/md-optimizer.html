@@ -50,7 +50,17 @@
                 <div class="source-tabs" role="tablist" aria-label="输入方式">
                     <button class="source-tab active" type="button" data-source-tab="text" role="tab" aria-selected="true"><i data-lucide="text-cursor-input"></i>直接输入</button>
                     <button class="source-tab" type="button" data-source-tab="file" role="tab" aria-selected="false"><i data-lucide="upload"></i>上传文件</button>
+                    <button class="source-tab" type="button" data-source-tab="image" role="tab" aria-selected="false"><i data-lucide="image"></i>解析图片</button>
                 </div>
+
+                <label class="file-drop image-drop" id="imageDrop" for="imageInput" hidden>
+                    <i data-lucide="scan-text"></i>
+                    <strong>上传截图或图片</strong>
+                    <span>支持 PNG、JPEG、WebP、GIF · 最大 10 MB</span>
+                    <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif">
+                    <img id="imagePreview" alt="图片预览" hidden>
+                    <small id="imageName"></small>
+                </label>
 
                 <label class="file-drop" id="fileDrop" for="fileInput" hidden>
                     <i data-lucide="file-up"></i>
@@ -82,6 +92,7 @@
                 </div>
 
                 <button class="optimize-button" id="optimizeButton" type="button" disabled><i data-lucide="sparkles"></i><span>开始优化</span><kbd>⌘ ↵</kbd></button>
+                <button class="optimize-button image-parse-button" id="parseImageButton" type="button" disabled hidden><i data-lucide="scan-text"></i><span>解析图片</span></button>
             </aside>
 
             <section class="result-panel">

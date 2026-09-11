@@ -39,6 +39,9 @@ class WebUiResourceTest {
         assertTrue(html.contains("id=\"markdownInput\""));
         assertTrue(html.contains("id=\"optimizeButton\""));
         assertTrue(html.contains("id=\"fileInput\""));
+        assertTrue(html.contains("data-source-tab=\"image\""));
+        assertTrue(html.contains("id=\"imageInput\""));
+        assertTrue(html.contains("id=\"parseImageButton\""));
         assertTrue(html.contains("id=\"modelSelect\""));
         assertTrue(javascript.contains("/api/md-optimizer/validate"));
         assertTrue(javascript.contains("/api/md-optimizer/optimize"));
@@ -51,6 +54,8 @@ class WebUiResourceTest {
         assertTrue(javascript.contains("generateAsync"));
         assertTrue(javascript.contains("state.archive ? state.archive.markdownPath"));
         assertTrue(styles.contains(".asset-link"));
+        assertTrue(javascript.contains("/api/md-optimizer/parse-image"));
+        assertTrue(javascript.contains("FormData"));
     }
 
     @Test

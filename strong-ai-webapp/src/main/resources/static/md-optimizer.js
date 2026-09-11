@@ -6,14 +6,14 @@
     const MAX_ARCHIVE_ENTRIES = 100;
     const MAX_EXTRACTED_SIZE = 50 * 1024 * 1024;
     const MAX_ENTRY_SIZE = 20 * 1024 * 1024;
-    const state = { sourceType: "text", mode: "format", result: null, view: "preview", loading: false, archive: null, objectUrls: [] };
+    const state = { sourceType: "text", mode: "format", result: null, view: "preview", loading: false, archive: null, objectUrls: [], image: null, imageUrl: null };
     const $ = (id) => document.getElementById(id);
     const els = {};
 
     document.addEventListener("DOMContentLoaded", initialize);
 
     function initialize() {
-        ["themeButton", "markdownInput", "fileInput", "fileDrop", "fileName", "contentCount", "validationMessage", "documentType", "audience", "modelSelect", "preserveCode", "preserveLinks", "optimizeButton", "resultState", "resultEmpty", "markdownPreview", "diffView", "sourceView", "resultSummary", "summaryText", "copyButton", "downloadButton", "retryButton", "toast"].forEach((id) => { els[id] = $(id); });
+        ["themeButton", "markdownInput", "fileInput", "fileDrop", "fileName", "imageDrop", "imageInput", "imagePreview", "imageName", "contentCount", "validationMessage", "documentType", "audience", "modelSelect", "preserveCode", "preserveLinks", "optimizeButton", "parseImageButton", "resultState", "resultEmpty", "markdownPreview", "diffView", "sourceView", "resultSummary", "summaryText", "copyButton", "downloadButton", "retryButton", "toast"].forEach((id) => { els[id] = $(id); });
         applyTheme();
         bindEvents();
         refreshIcons();
@@ -24,14 +24,19 @@
         els.themeButton.addEventListener("click", toggleTheme);
         els.markdownInput.addEventListener("input", () => { updateInputState(); clearValidation(); });
         els.fileInput.addEventListener("change", handleFile);
+        els.imageInput.addEventListener("change", (event) => { const file = event.target.files[0]; if (file) selectImage(file); });
         ["dragenter", "dragover"].forEach((eventName) => els.fileDrop.addEventListener(eventName, (event) => { event.preventDefault(); els.fileDrop.classList.add("dragging"); }));
         ["dragleave", "drop"].forEach((eventName) => els.fileDrop.addEventListener(eventName, (event) => { event.preventDefault(); els.fileDrop.classList.remove("dragging"); }));
         els.fileDrop.addEventListener("drop", (event) => { const file = event.dataTransfer.files[0]; if (file) readFile(file); });
+        ["dragenter", "dragover"].forEach((eventName) => els.imageDrop.addEventListener(eventName, (event) => { event.preventDefault(); els.imageDrop.classList.add("dragging"); }));
+        ["dragleave", "drop"].forEach((eventName) => els.imageDrop.addEventListener(eventName, (event) => { event.preventDefault(); els.imageDrop.classList.remove("dragging"); }));
+        els.imageDrop.addEventListener("drop", (event) => { const file = event.dataTransfer.files[0]; if (file) selectImage(file); });
         document.querySelectorAll("[data-source-tab]").forEach((button) => button.addEventListener("click", () => selectSource(button.dataset.sourceTab)));
         document.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => selectMode(button.dataset.mode)));
         document.querySelectorAll("[data-result-tab]").forEach((button) => button.addEventListener("click", () => selectView(button.dataset.resultTab)));
         els.optimizeButton.addEventListener("click", optimize);
-        els.retryButton.addEventListener("click", optimize);
+        els.parseImageButton.addEventListener("click", parseImage);
+        els.retryButton.addEventListener("click", () => state.sourceType === "image" ? parseImage() : optimize());
         els.copyButton.addEventListener("click", copyResult);
         els.downloadButton.addEventListener("click", downloadResult);
         document.addEventListener("keydown", (event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); if (!els.optimizeButton.disabled) optimize(); } });
@@ -43,17 +48,24 @@
             clearArchive();
             els.fileName.textContent = "";
         }
+        if (sourceType !== "image") clearImage();
         document.querySelectorAll("[data-source-tab]").forEach((button) => { const active = button.dataset.sourceTab === sourceType; button.classList.toggle("active", active); button.setAttribute("aria-selected", String(active)); });
         updateInputState();
     }
 
     function updateInputState() {
         const fileMode = state.sourceType === "file";
+        const imageMode = state.sourceType === "image";
         els.fileDrop.hidden = !fileMode;
+        els.imageDrop.hidden = !imageMode;
         els.markdownInput.classList.toggle("file-mode", fileMode);
+        els.markdownInput.hidden = imageMode;
         els.markdownInput.placeholder = fileMode ? "文件内容会显示在这里，可继续编辑" : "# 输入或粘贴 Markdown 文档\n\n从一段文字开始，右侧会生成更清晰的版本。";
-        els.contentCount.textContent = `${els.markdownInput.value.length.toLocaleString()} 字`;
+        els.contentCount.textContent = imageMode ? (state.image ? `${Math.round(state.image.size / 1024)} KB` : "0 KB") : `${els.markdownInput.value.length.toLocaleString()} 字`;
         els.optimizeButton.disabled = state.loading || !els.markdownInput.value.trim();
+        els.optimizeButton.hidden = imageMode;
+        els.parseImageButton.hidden = !imageMode;
+        els.parseImageButton.disabled = state.loading || !state.image;
     }
 
     function selectMode(mode) {
@@ -62,6 +74,56 @@
     }
 
     function handleFile(event) { const file = event.target.files[0]; if (file) readFile(file); }
+
+    function selectImage(file) {
+        const supported = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+        if (!supported.includes(file.type) || !/\.(png|jpe?g|webp|gif)$/i.test(file.name)) { showValidation("仅支持 PNG、JPEG、WebP 或 GIF 图片"); return; }
+        if (file.size > 10 * 1024 * 1024) { showValidation("图片大小不能超过 10 MB"); return; }
+        if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+        state.image = file;
+        state.imageUrl = URL.createObjectURL(file);
+        els.imagePreview.src = state.imageUrl;
+        els.imagePreview.hidden = false;
+        els.imageName.textContent = file.name;
+        clearValidation();
+        updateInputState();
+    }
+
+    function clearImage() {
+        if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+        state.image = null;
+        state.imageUrl = null;
+        if (els.imagePreview) { els.imagePreview.hidden = true; els.imagePreview.removeAttribute("src"); }
+        if (els.imageName) els.imageName.textContent = "";
+        if (els.imageInput) els.imageInput.value = "";
+    }
+
+    async function parseImage() {
+        if (state.loading || !state.image) return;
+        state.loading = true;
+        updateInputState();
+        els.resultSummary.hidden = true;
+        setState("正在解析图片", "busy");
+        try {
+            const parts = els.modelSelect.value.split(":");
+            const form = new FormData();
+            form.append("image", state.image);
+            form.append("provider", parts[0]);
+            form.append("model", parts.slice(1).join(":"));
+            form.append("maxTokens", "8192");
+            state.result = await requestMultipart("/api/md-optimizer/parse-image", form);
+            renderResult();
+            setState("已完成", "success");
+            showToast("图片解析完成");
+        } catch (error) {
+            setState("处理失败", "error");
+            showValidation(cleanError(error.message));
+        } finally {
+            state.loading = false;
+            updateInputState();
+            refreshIcons();
+        }
+    }
 
     function readFile(file) {
         if (/\.zip$/i.test(file.name)) { readZip(file); return; }
@@ -285,7 +347,8 @@
     async function downloadResult() {
         if (!state.result) return;
         if (state.archive) { await downloadArchiveResult(); return; }
-        downloadBlob(new Blob([state.result.optimizedContent], { type: "text/markdown;charset=utf-8" }), (els.fileName.textContent || "optimized-document.md").replace(/\.(markdown|md)$/i, "") + "-optimized.md");
+        const baseName = state.sourceType === "image" ? (els.imageName.textContent || "image") : (els.fileName.textContent || "optimized-document.md");
+        downloadBlob(new Blob([state.result.optimizedContent], { type: "text/markdown;charset=utf-8" }), baseName.replace(/\.(markdown|md|png|jpe?g|webp|gif)$/i, "") + "-parsed.md");
     }
 
     async function downloadArchiveResult() {
@@ -311,6 +374,7 @@
     }
 
     async function requestJson(url, body) { const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const payload = await response.json().catch(() => null); if (!response.ok || (payload && payload.success === false)) throw new Error(payload && (payload.message || payload.msg) || "请求失败"); return payload && payload.data !== undefined ? payload.data : payload; }
+    async function requestMultipart(url, body) { const response = await fetch(url, { method: "POST", body: body }); const payload = await response.json().catch(() => null); if (!response.ok || (payload && payload.success === false)) throw new Error(payload && (payload.message || payload.msg) || "请求失败"); return payload && payload.data !== undefined ? payload.data : payload; }
 
     function setState(text, type) { els.resultState.innerHTML = `<span class="state-dot ${type}"></span>${text}`; }
     function clearValidation() { els.validationMessage.textContent = ""; els.validationMessage.className = "validation-message"; }
