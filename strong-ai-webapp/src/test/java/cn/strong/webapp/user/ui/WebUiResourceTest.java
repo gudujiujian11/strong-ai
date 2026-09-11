@@ -44,6 +44,13 @@ class WebUiResourceTest {
         assertTrue(javascript.contains("/api/md-optimizer/optimize"));
         assertTrue(styles.contains(".optimizer-shell"));
         assertTrue(hasDeclaration(styles, ".result-empty[hidden], .result-summary[hidden]", "display", "none"));
+        assertTrue(html.contains(".zip"));
+        assertTrue(javascript.contains("JSZip"));
+        assertTrue(javascript.contains("MAX_ARCHIVE_SIZE"));
+        assertTrue(javascript.contains("恰好包含一个 Markdown 文件"));
+        assertTrue(javascript.contains("generateAsync"));
+        assertTrue(javascript.contains("state.archive ? state.archive.markdownPath"));
+        assertTrue(styles.contains(".asset-link"));
     }
 
     @Test

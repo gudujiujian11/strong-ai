@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/md-optimizer.css">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
     <script src="/md-optimizer.js" defer></script>
 </head>
 <body>
@@ -53,9 +54,9 @@
 
                 <label class="file-drop" id="fileDrop" for="fileInput" hidden>
                     <i data-lucide="file-up"></i>
-                    <strong>拖拽 .md 文件到这里</strong>
-                    <span>或点击选择文件 · 最大 120,000 字符</span>
-                    <input id="fileInput" type="file" accept=".md,.markdown,text/markdown">
+                    <strong>拖拽 Markdown 或 ZIP 到这里</strong>
+                    <span>ZIP 必须只包含一个 Markdown 文件 · 最大 20 MB</span>
+                    <input id="fileInput" type="file" accept=".md,.markdown,.zip,text/markdown,application/zip">
                     <small id="fileName"></small>
                 </label>
 

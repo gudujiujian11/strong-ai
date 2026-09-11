@@ -40,7 +40,7 @@ http://localhost:11028/doc.html
 
 应用启动后访问 [http://localhost:11028/](http://localhost:11028/) 即可打开聊天页面。页面支持 OpenAI、DeepSeek 模型切换、SSE 流式回答、停止生成、重新生成、会话搜索和深浅主题。会话记录保存在当前浏览器的 `localStorage` 中，不会同步到其他浏览器或设备。
 
-访问 [http://localhost:11028/md-optimizer.html](http://localhost:11028/md-optimizer.html) 可打开 Markdown 优化台。支持直接输入或上传 `.md/.markdown` 文件，提供格式整理、内容润色和结构重组三种模式，并支持 Markdown 预览、Diff、复制和下载。
+访问 [http://localhost:11028/md-optimizer.html](http://localhost:11028/md-optimizer.html) 可打开 Markdown 优化台。支持直接输入、上传 `.md/.markdown` 文件或上传仅包含一个 Markdown 文件的 ZIP 文档包；ZIP 中的图片可在预览中展示，其他附件会保留并支持下载，优化结果可重新导出为 ZIP。页面提供格式整理、内容润色和结构重组三种模式，并支持 Markdown 预览、Diff、复制和下载。
 
 ### AI 聊天
 
