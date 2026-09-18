@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class DocumentService {
@@ -24,6 +25,9 @@ public class DocumentService {
     private final DocumentMapper documentMapper;
     private final DocumentVersionMapper versionMapper;
     private final DocumentIdentityResolver identityResolver;
+
+    @Autowired(required = false)
+    private DocumentOperationLogService operationLogService;
 
     public DocumentService(DocumentMapper documentMapper, DocumentVersionMapper versionMapper,
                            DocumentIdentityResolver identityResolver) {
@@ -59,10 +63,14 @@ public class DocumentService {
             throw new ParamValiateException("保存文档请求不能为空");
         }
         DocumentEntity document = requireWritable(documentId);
+        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+            document.setTitle(required(request.getTitle(), "文档标题不能为空"));
+        }
         document.setDraftContent(required(request.getContent(), "文档内容不能为空"));
         document.setTags(safe(request.getTags()));
         document.setUpdatedAt(System.currentTimeMillis());
         documentMapper.updateById(document);
+        operation(document, "DRAFT_SAVED", identityResolver.current().getUserId());
         return toResponse(document);
     }
 
@@ -75,6 +83,7 @@ public class DocumentService {
         document.setStatus(DocumentStatus.PUBLISHED.name());
         document.setUpdatedAt(System.currentTimeMillis());
         documentMapper.updateById(document);
+        operation(document, "VERSION_PUBLISHED", identityResolver.current().getUserId());
         return toVersionResponse(version);
     }
 
@@ -95,6 +104,7 @@ public class DocumentService {
         document.setStatus(DocumentStatus.PUBLISHED.name());
         document.setUpdatedAt(System.currentTimeMillis());
         documentMapper.updateById(document);
+        operation(document, "VERSION_ROLLED_BACK", identityResolver.current().getUserId());
         return toVersionResponse(restored);
     }
 
@@ -122,6 +132,37 @@ public class DocumentService {
             throw new ParamValiateException("无权访问其他成员的草稿");
         }
         return document;
+    }
+
+    public DocumentEntity requireWritableDraft(Long documentId) {
+        return requireWritable(documentId);
+    }
+
+    public DocumentEntity findByTeam(Long documentId, String teamId) {
+        if (documentId == null || documentId <= 0 || teamId == null || teamId.trim().isEmpty()) {
+            return null;
+        }
+        return documentMapper.selectByTeamAndId(documentId, teamId);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void applyAiDraft(Long documentId, String teamId, String content) {
+        DocumentEntity document = findByTeam(documentId, teamId);
+        if (document == null) {
+            throw new ParamValiateException("文档不存在或无权访问");
+        }
+        document.setDraftContent(required(content, "AI 优化结果不能为空"));
+        document.setUpdatedAt(System.currentTimeMillis());
+        documentMapper.updateById(document);
+    }
+
+    public List<DocumentVersionResponse> listVersions(Long documentId) {
+        DocumentEntity document = requireReadable(documentId);
+        List<DocumentVersionEntity> versions = versionMapper.selectByTeamAndDocument(document.getTeamId(), document.getId());
+        if (versions == null) {
+            return Collections.emptyList();
+        }
+        return versions.stream().map(this::toVersionResponse).collect(Collectors.toList());
     }
 
     private DocumentEntity requireWritable(Long documentId) {
@@ -152,7 +193,9 @@ public class DocumentService {
         version.setTeamId(document.getTeamId());
         version.setVersionNo((latest == null ? 0L : latest) + 1L);
         version.setContent(content);
-        version.setDiffContent("");
+        DocumentVersionEntity previous = document.getCurrentVersionId() == null ? null
+                : versionMapper.selectByTeamAndId(document.getTeamId(), document.getCurrentVersionId());
+        version.setDiffContent(unifiedDiff(previous == null ? "" : previous.getContent(), content));
         version.setReleaseNote(safe(releaseNote));
         version.setCreatedBy(identityResolver.current().getUserId());
         version.setCreatedAt(System.currentTimeMillis());
@@ -197,5 +240,37 @@ public class DocumentService {
 
     private String safe(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String unifiedDiff(String before, String after) {
+        String[] oldLines = (before == null ? "" : before).split("\\r?\\n", -1);
+        String[] newLines = (after == null ? "" : after).split("\\r?\\n", -1);
+        StringBuilder diff = new StringBuilder();
+        int count = Math.max(oldLines.length, newLines.length);
+        for (int index = 0; index < count; index++) {
+            String oldLine = index < oldLines.length ? oldLines[index] : null;
+            String newLine = index < newLines.length ? newLines[index] : null;
+            if (java.util.Objects.equals(oldLine, newLine)) {
+                continue;
+            }
+            if (oldLine != null) {
+                diff.append("- ").append(escapeHtml(oldLine)).append('\n');
+            }
+            if (newLine != null) {
+                diff.append("+ ").append(escapeHtml(newLine)).append('\n');
+            }
+        }
+        return diff.toString();
+    }
+
+    private String escapeHtml(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;")
+                .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+    }
+
+    private void operation(DocumentEntity document, String action, String actor) {
+        if (operationLogService != null) {
+            operationLogService.record(document.getTeamId(), document.getId(), actor, action, "{}");
+        }
     }
 }

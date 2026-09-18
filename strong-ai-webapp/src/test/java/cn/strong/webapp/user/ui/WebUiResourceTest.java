@@ -66,6 +66,25 @@ class WebUiResourceTest {
         assertTrue(hasDeclaration(styles, ".chat-viewport", "overflow-y", "auto"));
     }
 
+    @Test
+    void documentGovernanceResourcesExposeTheRequiredWorkflow() throws IOException {
+        String html = resource("static/document-governance.html");
+        String javascript = resource("static/document-governance.js");
+        String styles = resource("static/document-governance.css");
+
+        assertTrue(html.contains("document-governance.js"));
+        assertTrue(html.contains("文档列表"));
+        assertTrue(html.contains("质量检查"));
+        assertTrue(html.contains("版本历史"));
+        assertTrue(html.contains("术语库"));
+        assertTrue(javascript.contains("/api/document-governance/documents"));
+        assertTrue(javascript.contains("ai-tasks"));
+        assertTrue(javascript.contains("quality-check"));
+        assertTrue(javascript.contains("versions"));
+        assertFalse(javascript.contains("localStorage.setItem(\"document"));
+        assertTrue(styles.contains(".governance-workspace"));
+    }
+
     private boolean hasDeclaration(String stylesheet, String selector, String property, String value) {
         String expression = Pattern.quote(selector)
                 + "\\s*\\{[^}]*" + Pattern.quote(property) + "\\s*:\\s*" + Pattern.quote(value) + "\\s*;";

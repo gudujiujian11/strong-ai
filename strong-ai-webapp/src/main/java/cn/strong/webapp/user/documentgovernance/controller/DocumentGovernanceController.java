@@ -2,10 +2,15 @@ package cn.strong.webapp.user.documentgovernance.controller;
 
 import cn.strong.common.base.Result;
 import cn.strong.webapp.user.documentgovernance.service.DocumentService;
+import cn.strong.webapp.user.documentgovernance.service.DocumentAiTaskService;
+import cn.strong.webapp.user.documentgovernance.service.QualityReportService;
+import cn.strong.webapp.user.model.documentgovernance.AiOptimizeRequest;
+import cn.strong.webapp.user.model.documentgovernance.AiTaskResponse;
 import cn.strong.webapp.user.model.documentgovernance.DocumentCreateRequest;
 import cn.strong.webapp.user.model.documentgovernance.DocumentResponse;
 import cn.strong.webapp.user.model.documentgovernance.DocumentSaveRequest;
 import cn.strong.webapp.user.model.documentgovernance.DocumentVersionResponse;
+import cn.strong.webapp.user.model.documentgovernance.QualityCheckResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.util.List;
@@ -24,9 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class DocumentGovernanceController {
 
     private final DocumentService documentService;
+    private final QualityReportService qualityReportService;
+    private final DocumentAiTaskService documentAiTaskService;
 
-    public DocumentGovernanceController(DocumentService documentService) {
+    public DocumentGovernanceController(DocumentService documentService, QualityReportService qualityReportService,
+                                        DocumentAiTaskService documentAiTaskService) {
         this.documentService = documentService;
+        this.qualityReportService = qualityReportService;
+        this.documentAiTaskService = documentAiTaskService;
     }
 
     @PostMapping
@@ -67,5 +77,24 @@ public class DocumentGovernanceController {
                                                      @PathVariable("versionNo") Long versionNo,
                                                      @RequestParam(value = "releaseNote", required = false) String releaseNote) {
         return Result.ok(documentService.rollback(documentId, versionNo, releaseNote));
+    }
+
+    @GetMapping("/{documentId}/versions")
+    @ApiOperation("查询文档版本历史")
+    public Result<List<DocumentVersionResponse>> versions(@PathVariable("documentId") Long documentId) {
+        return Result.ok(documentService.listVersions(documentId));
+    }
+
+    @PostMapping("/{documentId}/quality-check")
+    @ApiOperation("运行确定性质量检查")
+    public Result<QualityCheckResponse> qualityCheck(@PathVariable("documentId") Long documentId) {
+        return Result.ok(qualityReportService.checkAndSave(documentId));
+    }
+
+    @PostMapping("/{documentId}/ai-tasks")
+    @ApiOperation("提交文档 AI 优化任务")
+    public Result<AiTaskResponse> submitAiTask(@PathVariable("documentId") Long documentId,
+                                                @RequestBody AiOptimizeRequest request) {
+        return Result.ok(documentAiTaskService.submit(documentId, request));
     }
 }

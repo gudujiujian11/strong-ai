@@ -11,6 +11,7 @@ import cn.strong.webapp.user.model.documentgovernance.QualityIssue;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class QualityReportService {
@@ -22,6 +23,12 @@ public class QualityReportService {
     private final QualityReportMapper reportMapper;
     private final QualityIssueMapper issueMapper;
     private final DocumentIdentityResolver identityResolver;
+
+    @Autowired(required = false)
+    private DocumentOperationLogService operationLogService;
+
+    @Autowired(required = false)
+    private DocumentMetricsService metricsService;
 
     public QualityReportService(DocumentService documentService, TemplateService templateService,
                                 TermService termService, MarkdownQualityChecker checker,
@@ -52,6 +59,13 @@ public class QualityReportService {
         reportMapper.insert(report);
         for (QualityIssue issue : issues) {
             issueMapper.insert(toEntity(document.getTeamId(), report.getId(), issue));
+            if (metricsService != null) {
+                metricsService.recordQualityCheck(document.getDocumentType(), issue.getRuleCode());
+            }
+        }
+        if (operationLogService != null) {
+            operationLogService.record(document.getTeamId(), document.getId(), identityResolver.current().getUserId(),
+                    "QUALITY_CHECKED", "{\"ruleCount\":" + issues.size() + "}");
         }
         return response(report, issues);
     }

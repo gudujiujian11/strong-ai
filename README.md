@@ -76,3 +76,8 @@ curl -X POST http://localhost:11028/api/md-optimizer/optimize \
 
 1. 只允许在**测试环境**开启, 其它环境**不允许**开启
 2. 默认关闭, 如需启用, 请在**配置中心**(如 nacos `config.properties`)中增加配置 `strong.swagger.enable = true`
+# 技术文档治理台
+
+技术文档治理接口位于 `/api/document-governance`。请求必须先经由可信网关，网关需要移除客户端伪造的身份头并注入 `X-Strong-User-Id`、`X-Strong-Team-Id` 和角色为 `member` 或 `admin` 的 `X-Strong-Role`。
+
+数据库连接仅从 Nacos 的 `db.properties` 配置加载。Flyway 会依次执行文档治理迁移；草稿在 30 天未更新且从未发布时清理，发布版本长期保留。模型密钥只能置于环境变量或 Nacos 加密配置，禁止写入仓库或日志。
