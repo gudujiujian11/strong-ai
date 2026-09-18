@@ -1,5 +1,6 @@
 package cn.strong.webapp.user.documentgovernance.service;
 
+import cn.strong.webapp.user.documentgovernance.entity.TermEntity;
 import cn.strong.webapp.user.model.documentgovernance.QualityIssue;
 import java.util.Arrays;
 import java.util.List;
@@ -16,7 +17,7 @@ class MarkdownQualityCheckerTest {
     @Test
     void findsMissingRequiredHeadingBrokenLinkAndForbiddenTermWithLineNumbers() {
         List<QualityIssue> issues = checker.check("# 概述\n访问 [站点](javascript:alert(1))\n使用 OldSDK",
-                Arrays.asList("安装"), Arrays.asList(new MarkdownQualityChecker.TermRule("OldSDK", "NewSDK", true)));
+                Arrays.asList("安装"), Arrays.asList(forbidden("OldSDK", "NewSDK")));
         List<String> codes = issues.stream().map(QualityIssue::getRuleCode).collect(Collectors.toList());
 
         assertTrue(codes.contains("REQUIRED_HEADING"));
@@ -28,10 +29,18 @@ class MarkdownQualityCheckerTest {
     @Test
     void ignoresTermsInsideFencedCodeAndDetectsUnclosedFence() {
         List<QualityIssue> issues = checker.check("```bash\n# 安装 OldSDK", Arrays.asList("安装"),
-                Arrays.asList(new MarkdownQualityChecker.TermRule("OldSDK", "NewSDK", true)));
+                Arrays.asList(forbidden("OldSDK", "NewSDK")));
         List<String> codes = issues.stream().map(QualityIssue::getRuleCode).collect(Collectors.toList());
 
         assertTrue(codes.contains("UNCLOSED_FENCE"));
         assertFalse(codes.contains("FORBIDDEN_TERM"));
+    }
+
+    private TermEntity forbidden(String term, String preferredTerm) {
+        TermEntity entity = new TermEntity();
+        entity.setTerm(term);
+        entity.setPreferredTerm(preferredTerm);
+        entity.setForbidden(true);
+        return entity;
     }
 }

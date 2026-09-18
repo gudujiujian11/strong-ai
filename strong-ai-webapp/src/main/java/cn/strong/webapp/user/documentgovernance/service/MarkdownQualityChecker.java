@@ -1,5 +1,6 @@
 package cn.strong.webapp.user.documentgovernance.service;
 
+import cn.strong.webapp.user.documentgovernance.entity.TermEntity;
 import cn.strong.webapp.user.model.documentgovernance.QualityIssue;
 import cn.strong.webapp.user.model.documentgovernance.QualitySeverity;
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ public class MarkdownQualityChecker {
     private static final Pattern HEADING = Pattern.compile("^(#{1,6})\\s+(.+?)\\s*$");
     private static final Pattern MARKDOWN_LINK = Pattern.compile("\\[[^]]*]\\(([^)]+)\\)");
 
-    public List<QualityIssue> check(String content, List<String> requiredHeadings, List<TermRule> terms) {
+    public List<QualityIssue> check(String content, List<String> requiredHeadings, List<TermEntity> terms) {
         if (content == null || content.isEmpty()) {
             return Collections.singletonList(issue("EMPTY_DOCUMENT", QualitySeverity.HIGH, 1,
                     "文档内容为空", "补充 Markdown 文档内容"));
@@ -54,8 +55,8 @@ public class MarkdownQualityChecker {
                             "文档包含危险链接协议", "改用 HTTPS 链接或相对资源路径"));
                 }
             }
-            for (TermRule term : safeTerms(terms)) {
-                if (term.isForbidden() && !term.getTerm().isEmpty() && line.contains(term.getTerm())) {
+            for (TermEntity term : safeTerms(terms)) {
+                if (Boolean.TRUE.equals(term.getForbidden()) && !term.getTerm().isEmpty() && line.contains(term.getTerm())) {
                     issues.add(issue("FORBIDDEN_TERM", QualitySeverity.MEDIUM, lineNumber,
                             "检测到禁用术语：" + term.getTerm(), "建议使用：" + term.getPreferredTerm()));
                 }
@@ -78,7 +79,7 @@ public class MarkdownQualityChecker {
         return headings == null ? Collections.emptyList() : headings;
     }
 
-    private List<TermRule> safeTerms(List<TermRule> terms) {
+    private List<TermEntity> safeTerms(List<TermEntity> terms) {
         return terms == null ? Collections.emptyList() : terms;
     }
 
@@ -91,29 +92,5 @@ public class MarkdownQualityChecker {
         issue.setMessage(message);
         issue.setSuggestion(suggestion);
         return issue;
-    }
-
-    public static final class TermRule {
-        private final String term;
-        private final String preferredTerm;
-        private final boolean forbidden;
-
-        public TermRule(String term, String preferredTerm, boolean forbidden) {
-            this.term = term == null ? "" : term;
-            this.preferredTerm = preferredTerm == null ? "" : preferredTerm;
-            this.forbidden = forbidden;
-        }
-
-        public String getTerm() {
-            return term;
-        }
-
-        public String getPreferredTerm() {
-            return preferredTerm;
-        }
-
-        public boolean isForbidden() {
-            return forbidden;
-        }
     }
 }
