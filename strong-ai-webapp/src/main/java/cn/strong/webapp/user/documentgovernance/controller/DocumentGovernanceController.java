@@ -1,0 +1,71 @@
+package cn.strong.webapp.user.documentgovernance.controller;
+
+import cn.strong.common.base.Result;
+import cn.strong.webapp.user.documentgovernance.service.DocumentService;
+import cn.strong.webapp.user.model.documentgovernance.DocumentCreateRequest;
+import cn.strong.webapp.user.model.documentgovernance.DocumentResponse;
+import cn.strong.webapp.user.model.documentgovernance.DocumentSaveRequest;
+import cn.strong.webapp.user.model.documentgovernance.DocumentVersionResponse;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/document-governance/documents")
+@Api(tags = {"v1.0", "document-governance"}, description = "技术文档治理接口")
+public class DocumentGovernanceController {
+
+    private final DocumentService documentService;
+
+    public DocumentGovernanceController(DocumentService documentService) {
+        this.documentService = documentService;
+    }
+
+    @PostMapping
+    @ApiOperation("创建技术文档草稿")
+    public Result<DocumentResponse> create(@RequestBody DocumentCreateRequest request) {
+        return Result.ok(documentService.create(request));
+    }
+
+    @GetMapping
+    @ApiOperation("查询当前团队文档")
+    public Result<List<DocumentResponse>> list() {
+        return Result.ok(documentService.list());
+    }
+
+    @GetMapping("/{documentId}")
+    @ApiOperation("查询文档详情")
+    public Result<DocumentResponse> get(@PathVariable("documentId") Long documentId) {
+        return Result.ok(documentService.get(documentId));
+    }
+
+    @PutMapping("/{documentId}/draft")
+    @ApiOperation("保存文档草稿")
+    public Result<DocumentResponse> saveDraft(@PathVariable("documentId") Long documentId,
+                                               @RequestBody DocumentSaveRequest request) {
+        return Result.ok(documentService.saveDraft(documentId, request));
+    }
+
+    @PostMapping("/{documentId}/publish")
+    @ApiOperation("发布文档版本")
+    public Result<DocumentVersionResponse> publish(@PathVariable("documentId") Long documentId,
+                                                    @RequestParam(value = "releaseNote", required = false) String releaseNote) {
+        return Result.ok(documentService.publish(documentId, releaseNote));
+    }
+
+    @PostMapping("/{documentId}/rollback/{versionNo}")
+    @ApiOperation("回滚并创建新版本")
+    public Result<DocumentVersionResponse> rollback(@PathVariable("documentId") Long documentId,
+                                                     @PathVariable("versionNo") Long versionNo,
+                                                     @RequestParam(value = "releaseNote", required = false) String releaseNote) {
+        return Result.ok(documentService.rollback(documentId, versionNo, releaseNote));
+    }
+}
