@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f5f1">
+    <title>技术文档治理台 · Strong AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/document-governance.css">
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/document-governance.js" defer></script>
+</head>
+<body>
+<div class="governance-shell">
+    <header class="governance-topbar">
+        <a class="governance-brand" href="/" aria-label="返回 Strong AI 聊天"><span class="brand-mark">S</span><span>Strong AI <em>/</em> 技术文档治理台</span></a>
+        <div class="top-actions"><span class="team-indicator" id="teamIndicator">TEAM</span><button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换主题"><i data-lucide="moon"></i></button></div>
+    </header>
+    <nav class="mobile-tabs" aria-label="工作区视图">
+        <button type="button" data-pane="documents" class="active"><i data-lucide="files"></i>文档</button>
+        <button type="button" data-pane="editor"><i data-lucide="file-pen-line"></i>编辑</button>
+        <button type="button" data-pane="inspect"><i data-lucide="scan-search"></i>检查</button>
+    </nav>
+    <main class="governance-workspace" id="governanceWorkspace">
+        <aside class="document-pane pane-documents" data-pane-content="documents">
+            <div class="pane-heading"><div><p class="eyebrow">DOCUMENTS</p><h1>文档列表</h1></div><button class="icon-button accent-icon" id="newDocumentButton" type="button" aria-label="新建文档" title="新建文档"><i data-lucide="file-plus-2"></i></button></div>
+            <label class="search-field"><i data-lucide="search"></i><input id="documentSearch" type="search" placeholder="搜索标题或标签" autocomplete="off"></label>
+            <select class="status-filter" id="statusFilter" aria-label="按状态筛选"><option value="">全部状态</option><option value="DRAFT">草稿</option><option value="PUBLISHED">已发布</option></select>
+            <div class="document-list" id="documentList" aria-live="polite"></div>
+        </aside>
+        <section class="editor-pane pane-editor" data-pane-content="editor">
+            <div class="pane-heading editor-heading"><div><p class="eyebrow" id="documentMeta">DRAFT</p><input id="documentTitle" class="title-input" aria-label="文档标题" placeholder="未选择文档" disabled></div><div class="editor-actions"><button class="icon-button" id="saveDraftButton" type="button" aria-label="保存草稿" title="保存草稿" disabled><i data-lucide="save"></i></button><button class="command-button" id="optimizeButton" type="button" disabled><i data-lucide="sparkles"></i><span>AI 优化</span></button><button class="command-button" id="qualityButton" type="button" disabled><i data-lucide="scan-line"></i><span>质量检查</span></button><button class="command-button publish-button" id="publishButton" type="button" disabled><i data-lucide="send"></i><span>发布</span></button></div></div>
+            <div class="editor-fields"><input id="documentType" aria-label="文档类型" placeholder="文档类型" disabled><input id="documentTags" aria-label="标签" placeholder="标签，用逗号分隔" disabled></div>
+            <textarea id="documentContent" class="document-editor" spellcheck="false" placeholder="# 从一份技术文档开始" disabled></textarea>
+            <div class="editor-footer"><span id="editorState">选择或新建文档</span><span id="lineCounter">1 行</span></div>
+        </section>
+        <aside class="inspect-pane pane-inspect" data-pane-content="inspect">
+            <div class="inspection-tabs" role="tablist"><button type="button" data-inspection="issues" class="active" role="tab">质量检查</button><button type="button" data-inspection="versions" role="tab">版本历史</button><button type="button" data-inspection="terms" role="tab">术语库</button></div>
+            <section class="inspection-view" id="issuesView"><div class="inspection-head"><div><p class="eyebrow">QUALITY</p><h2 id="qualityScore">等待检查</h2></div><span class="issue-count" id="issueCount">0</span></div><div class="issue-list" id="issueList"></div></section>
+            <section class="inspection-view" id="versionsView" hidden><div class="inspection-head"><div><p class="eyebrow">VERSIONS</p><h2>版本历史</h2></div><button class="icon-button" id="loadVersionsButton" type="button" aria-label="刷新版本历史" title="刷新版本"><i data-lucide="refresh-cw"></i></button></div><div class="version-list" id="versionList"></div><pre class="diff-content" id="diffContent"></pre></section>
+            <section class="inspection-view" id="termsView" hidden><div class="inspection-head"><div><p class="eyebrow">TERMINOLOGY</p><h2>术语库</h2></div><button class="icon-button admin-control" id="addTermButton" type="button" aria-label="添加术语" title="添加术语" hidden><i data-lucide="plus"></i></button></div><div class="term-list" id="termList"></div><div class="admin-panel" id="adminPanel" hidden><button type="button" class="text-command"><i data-lucide="layout-template"></i>模板管理</button><button type="button" class="text-command"><i data-lucide="sliders-horizontal"></i>规则管理</button></div></section>
+        </aside>
+    </main>
+</div>
+<dialog class="term-dialog" id="termDialog"><form method="dialog" id="termForm"><header><strong>新增术语</strong><button class="icon-button" value="cancel" aria-label="关闭" title="关闭"><i data-lucide="x"></i></button></header><label>术语<input id="termName" required maxlength="200"></label><label>推荐写法<input id="preferredTerm" maxlength="200"></label><label class="check-field"><input id="forbiddenTerm" type="checkbox">禁用术语</label><label>说明<input id="termDescription" maxlength="500"></label><footer><button class="command-button" value="cancel" type="button" id="cancelTermButton">取消</button><button class="command-button publish-button" value="default" type="submit">保存</button></footer></form></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
