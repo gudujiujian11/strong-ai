@@ -1,52 +1,88 @@
-# strong-ai
-## 项目简介
-### 功能简介
+# Strong AI
 
+Strong AI 是一个基于 Spring Boot 的多模型 AI 应用，提供网页聊天、服务端会话管理、Markdown 优化、图片转 Markdown 和技术文档治理能力。
+
+## 功能
+
+- 多模型 AI 聊天：统一接入 OpenAI、DeepSeek、豆包和通义千问等模型，支持同步与 SSE 流式调用。
+- 会话管理：服务端保存会话、历史消息和模型设置，支持新建、切换模型、清空和重新生成回复。
+- Markdown 优化：支持内容校验、格式整理、内容润色和结构重组；可处理 Markdown 文件、单 Markdown 文件的 ZIP 包，以及 PNG/JPEG/WebP/GIF 图片。
+- 技术文档治理：支持团队内文档草稿、质量检查、AI 优化任务、版本发布与回滚、术语库和 30 天草稿清理。
+
+## 模块
+
+| 模块 | 职责 |
+| --- | --- |
+| `strong-ai-webapp` | Spring Boot Web 应用、REST API、静态页面与业务实现 |
+| `strong-ai-model` | API 请求、响应和领域模型 |
+| `strong-ai-mq-model` | 消息队列模型 |
+| `strong-ai-remote-api` | OpenFeign 远程调用契约 |
 
 ## 技术栈
-- spring boot2.4.2, spring cloud2020,
-- mysql, mybatis, mybatis-plus, hikaricp,
-- xxl-job
-- redis-cluster
-- rabbitmq
-- nacos
-- dubbo
 
+- Java 8、Spring Boot 2.4.2、Spring Cloud 2020
+- MySQL、MyBatis-Plus、HikariCP、Flyway
+- Nacos 配置中心与注册中心、OpenFeign
+- `ai4j-spring-boot-starter`、SSE、Log4j2
+- 原生 HTML、CSS、JavaScript 静态工作台
 
-## git仓库地址
+## 前置条件
 
+- JDK 8
+- Maven 3.6.3：`/Users/zhangchunxia/jdk/apache-maven-3.6.3/bin/mvn`
+- MySQL 数据库
+- Nacos。默认会加载 `config.properties`、`cache.properties`、`mq.properties`、`db.properties` 和 `log4j2-spring.xml`。
+- 至少配置一个 AI 平台的密钥。密钥仅允许通过环境变量或 Nacos 密文配置提供，禁止提交到仓库。
 
-## 接口地址
+应用端口默认为 `11028`。数据库迁移由 Flyway 在启动时执行。
 
+## 启动
 
-## 备注
+```bash
+MAVEN_OPTS='-Dfile.encoding=UTF-8' /Users/zhangchunxia/jdk/apache-maven-3.6.3/bin/mvn -pl strong-ai-webapp -am clean package
+java -jar strong-ai-webapp/target/strong-ai.jar
+```
 
+启动后可访问：
 
-## 使用说明
-- 服务器端口号：11028
+| 地址 | 用途 |
+| --- | --- |
+| `http://localhost:11028/` | AI 聊天与会话管理 |
+| `http://localhost:11028/md-optimizer.html` | Markdown 优化台 |
+| `http://localhost:11028/document-governance.html` | 技术文档治理台 |
+| `http://localhost:11028/doc.html` | Swagger 文档，仅限测试环境开启 |
 
-## 开发环境及依赖
+Swagger 默认关闭。仅在测试环境通过配置中心设置 `strong.swagger.enable=true` 后启用。
 
+## AI 平台配置
 
-## 快速启动
+`bootstrap.yml` 中的 `ai.platforms` 以 `id` 作为请求的 `provider`，以 `platform` 指定 SDK 实现。常用环境变量如下：
 
-## swagger地址
+| 平台 | 密钥变量 | 可选地址变量 |
+| --- | --- | --- |
+| OpenAI | `OPENAI_API_KEY` | `OPENAI_API_HOST`、`OPENAI_CHAT_COMPLETION_URL`、`OPENAI_RESPONSES_URL` |
+| DeepSeek | `DEEPSEEK_API_KEY` | `DEEPSEEK_API_HOST`、`DEEPSEEK_CHAT_COMPLETION_URL` |
+| 豆包 | `DOUBAO_API_KEY` | `DOUBAO_API_HOST`、`DOUBAO_CHAT_COMPLETION_URL` |
+| 通义千问 | `QWEN_API_KEY` | `QWEN_API_HOST`、`QWEN_RESPONSES_URL` |
 
-http://localhost:11028/doc.html
+可用模型名称由对应平台决定。示例中使用的 `gpt-5.6-sol` 仅在已配置该模型的平台可用。
 
-## 使用示例
+## 核心接口
 
-### 网页端
+| 分组 | 路径 | 说明 |
+| --- | --- | --- |
+| AI 聊天 | `POST /api/ai/chat` | 同步调用模型 |
+| AI 聊天 | `POST /api/ai/chat/stream` | SSE 流式调用模型 |
+| 会话 | `/api/conversations` | 会话及历史消息的增删改查 |
+| 会话 | `POST /api/conversations/{id}/messages/stream` | 基于服务端会话历史流式生成回复 |
+| Markdown | `POST /api/md-optimizer/validate` | 校验 Markdown 内容与文件名 |
+| Markdown | `POST /api/md-optimizer/optimize` | 同步优化 Markdown |
+| Markdown | `POST /api/md-optimizer/parse-image` | 上传图片并生成 Markdown |
+| 文档治理 | `/api/document-governance/documents` | 文档草稿、发布、回滚、版本和质量检查 |
+| 文档治理 | `/api/document-governance/ai-tasks/{taskId}` | 查询 AI 优化任务及 SSE 状态流 |
+| 文档治理 | `/api/document-governance/terms` | 查询或维护当前团队术语 |
 
-应用启动后访问 [http://localhost:11028/](http://localhost:11028/) 即可打开聊天页面。页面支持 OpenAI、DeepSeek 模型切换、SSE 流式回答、停止生成、重新生成、会话搜索和深浅主题。会话记录保存在当前浏览器的 `localStorage` 中，不会同步到其他浏览器或设备。
-
-访问 [http://localhost:11028/md-optimizer.html](http://localhost:11028/md-optimizer.html) 可打开 Markdown 优化台。支持直接输入、上传 `.md/.markdown` 文件或上传仅包含一个 Markdown 文件的 ZIP 文档包；ZIP 中的图片可在预览中展示，其他附件会保留并支持下载，优化结果可重新导出为 ZIP。新增“解析图片”入口，可上传 PNG/JPEG/WebP/GIF 图片并由视觉模型生成 Markdown。页面提供格式整理、内容润色和结构重组三种模式，并支持 Markdown 预览、Diff、复制和下载。
-
-### AI 聊天
-
-AI 调用由 `ai4j-spring-boot-starter` 自动装配。`bootstrap.yml` 的 `ai.platforms` 以 `id` 作为接口的 `provider`，以 `platform` 指定模型厂商实现。密钥必须通过环境变量或 Nacos 密文配置注入。OpenAI 使用 `OPENAI_API_KEY`，可通过 `OPENAI_API_HOST`、`OPENAI_CHAT_COMPLETION_URL` 和 `OPENAI_RESPONSES_URL` 覆盖默认端点。
-
-GPT-5.6：
+### AI 聊天示例
 
 ```bash
 curl -X POST http://localhost:11028/api/ai/chat \
@@ -54,15 +90,7 @@ curl -X POST http://localhost:11028/api/ai/chat \
   -d '{"provider":"openai","model":"gpt-5.6-sol","messages":[{"role":"user","content":"你好"}]}'
 ```
 
-DeepSeek：
-
-```bash
-curl -X POST http://localhost:11028/api/ai/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"provider":"deepseek","model":"deepseek-chat","messages":[{"role":"user","content":"你好"}]}'
-```
-
-### Markdown 优化
+### Markdown 优化示例
 
 ```bash
 curl -X POST http://localhost:11028/api/md-optimizer/optimize \
@@ -70,16 +98,36 @@ curl -X POST http://localhost:11028/api/md-optimizer/optimize \
   -d '{"content":"# 标题\n\n正文","mode":"format","documentType":"README","provider":"openai","model":"gpt-5.6-sol"}'
 ```
 
-## 注意
+## 技术文档治理身份
 
-- swagger 文档
+文档治理 API 依赖可信网关注入以下请求头：
 
-1. 只允许在**测试环境**开启, 其它环境**不允许**开启
-2. 默认关闭, 如需启用, 请在**配置中心**(如 nacos `config.properties`)中增加配置 `strong.swagger.enable = true`
-# 技术文档治理台
+```text
+X-Strong-User-Id
+X-Strong-Team-Id
+X-Strong-Role: member | admin
+```
 
-技术文档治理接口位于 `/api/document-governance`。请求必须先经由可信网关，网关需要移除客户端伪造的身份头并注入 `X-Strong-User-Id`、`X-Strong-Team-Id` 和角色为 `member` 或 `admin` 的 `X-Strong-Role`。
+网关必须先移除客户端伪造的同名请求头，再注入身份信息。生产环境不允许浏览器直接伪造这些头。
 
-未接入网关的本地或测试环境可显式设置 `strong.document-governance.test-login.enabled=true`，页面才会显示模拟身份入口。生产环境必须保持默认值 `false`，并由可信网关注入身份头。
+未接入网关的本地或测试环境，可显式设置以下配置以显示页面顶部的模拟身份入口：
 
-数据库连接仅从 Nacos 的 `db.properties` 配置加载。Flyway 会依次执行文档治理迁移；草稿在 30 天未更新且从未发布时清理，发布版本长期保留。模型密钥只能置于环境变量或 Nacos 加密配置，禁止写入仓库或日志。
+```properties
+strong.document-governance.test-login.enabled=true
+```
+
+模拟身份仅保存在浏览器 `localStorage`，用于自动附加上述身份头；生产环境必须保持默认值 `false`。
+
+## 测试
+
+运行文档治理身份相关测试时，需要连同 Maven 模块依赖一起构建：
+
+```bash
+MAVEN_OPTS='-Dfile.encoding=UTF-8' /Users/zhangchunxia/jdk/apache-maven-3.6.3/bin/mvn -pl strong-ai-webapp -am -DforkCount=0 -DfailIfNoTests=false -Dtest=DocumentGovernanceTestLoginControllerTest,DocumentIdentityInterceptorTest test
+```
+
+## 安全与数据留存
+
+- AI 密钥、文档正文和完整提示词不得写入仓库、应用日志或指标系统。
+- 文档按团队隔离；成员和管理员权限由网关角色决定。
+- 未发布且连续 30 天未更新的草稿会定时清理；已发布版本长期保留。

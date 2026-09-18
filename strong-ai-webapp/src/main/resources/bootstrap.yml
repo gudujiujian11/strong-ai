@@ -66,7 +66,7 @@ ai:
   platforms:
     - id: openai
       platform: openai
-      api-key: ${OPENAI_API_KEY:}
+      api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
       api-host: ${OPENAI_API_HOST:https://ai.962831.xyz}
 #      api-host: ${OPENAI_API_HOST:https://api.justwoker.icu}
       chat-completion-url: ${OPENAI_CHAT_COMPLETION_URL:/v1/chat/completions}
