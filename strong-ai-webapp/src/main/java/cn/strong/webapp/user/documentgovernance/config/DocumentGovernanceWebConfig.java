@@ -13,6 +13,7 @@ public class DocumentGovernanceWebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new DocumentIdentityInterceptor())
-                .addPathPatterns("/api/document-governance/**");
+                .addPathPatterns("/api/document-governance/**")
+                .excludePathPatterns("/api/document-governance/test-login/config");
     }
 }

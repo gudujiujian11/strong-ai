@@ -80,4 +80,6 @@ curl -X POST http://localhost:11028/api/md-optimizer/optimize \
 
 技术文档治理接口位于 `/api/document-governance`。请求必须先经由可信网关，网关需要移除客户端伪造的身份头并注入 `X-Strong-User-Id`、`X-Strong-Team-Id` 和角色为 `member` 或 `admin` 的 `X-Strong-Role`。
 
+未接入网关的本地或测试环境可显式设置 `strong.document-governance.test-login.enabled=true`，页面才会显示模拟身份入口。生产环境必须保持默认值 `false`，并由可信网关注入身份头。
+
 数据库连接仅从 Nacos 的 `db.properties` 配置加载。Flyway 会依次执行文档治理迁移；草稿在 30 天未更新且从未发布时清理，发布版本长期保留。模型密钥只能置于环境变量或 Nacos 加密配置，禁止写入仓库或日志。

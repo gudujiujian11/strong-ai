@@ -16,7 +16,7 @@
 <div class="governance-shell">
     <header class="governance-topbar">
         <a class="governance-brand" href="/" aria-label="返回 Strong AI 聊天"><span class="brand-mark">S</span><span>Strong AI <em>/</em> 技术文档治理台</span></a>
-        <div class="top-actions"><span class="team-indicator" id="teamIndicator">TEAM</span><button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换主题"><i data-lucide="moon"></i></button></div>
+        <div class="top-actions"><span class="team-indicator" id="teamIndicator">TEAM</span><button class="test-identity-button" id="testIdentityButton" type="button" hidden title="切换测试身份"><i data-lucide="shield-user"></i><span id="testIdentityLabel">测试身份</span></button><button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换主题"><i data-lucide="moon"></i></button></div>
     </header>
     <nav class="mobile-tabs" aria-label="工作区视图">
         <button type="button" data-pane="documents" class="active"><i data-lucide="files"></i>文档</button>
@@ -45,6 +45,7 @@
     </main>
 </div>
 <dialog class="term-dialog" id="termDialog"><form method="dialog" id="termForm"><header><strong>新增术语</strong><button class="icon-button" value="cancel" aria-label="关闭" title="关闭"><i data-lucide="x"></i></button></header><label>术语<input id="termName" required maxlength="200"></label><label>推荐写法<input id="preferredTerm" maxlength="200"></label><label class="check-field"><input id="forbiddenTerm" type="checkbox">禁用术语</label><label>说明<input id="termDescription" maxlength="500"></label><footer><button class="command-button" value="cancel" type="button" id="cancelTermButton">取消</button><button class="command-button publish-button" value="default" type="submit">保存</button></footer></form></dialog>
+<dialog class="term-dialog" id="testIdentityDialog"><form id="testIdentityForm"><header><div><p class="eyebrow">TEST LOGIN</p><strong>模拟身份</strong></div><button class="icon-button" type="button" id="cancelTestIdentityButton" aria-label="关闭" title="关闭"><i data-lucide="x"></i></button></header><label>用户 ID<input id="testUserId" required maxlength="100" autocomplete="off"></label><label>团队 ID<input id="testTeamId" required maxlength="100" autocomplete="off"></label><label>角色<select id="testRole" aria-label="测试角色"><option value="member">成员</option><option value="admin">管理员</option></select></label><footer><button class="command-button" type="button" id="clearTestIdentityButton">恢复默认</button><button class="command-button publish-button" type="submit">应用身份</button></footer></form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
