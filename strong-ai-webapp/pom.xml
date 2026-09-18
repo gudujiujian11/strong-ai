@@ -93,23 +93,20 @@
 
         <!--    自定义区域    -->
 
-        <!--        &lt;!&ndash;  mysql && mybatis && mybatis plus &ndash;&gt;
-                <dependency>
-                    <groupId>cn.strong</groupId>
-                    <artifactId>strong-mybatis-plus-extend</artifactId>
-                </dependency>
-
-                &lt;!&ndash;   redis client with lettuce   &ndash;&gt;
-                <dependency>
-                    <groupId>cn.strong</groupId>
-                    <artifactId>lettuce-spring-boot-starter</artifactId>
-                </dependency>
-
-                &lt;!&ndash;   分布式锁     &ndash;&gt;
-                <dependency>
-                    <groupId>cn.strong</groupId>
-                    <artifactId>klock-spring-boot-starter</artifactId>
-                </dependency>-->
+        <!-- mysql、MyBatis-Plus 与 Redis 缓存 -->
+        <dependency>
+            <groupId>cn.strong</groupId>
+            <artifactId>strong-mybatis-plus-extend</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.strong</groupId>
+            <artifactId>lettuce-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>7.10.0</version>
+        </dependency>
 
 <!--        <dependency>-->
 <!--            <groupId>io.github.lnyo-cly</groupId>-->

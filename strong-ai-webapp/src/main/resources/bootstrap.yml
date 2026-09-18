@@ -66,9 +66,8 @@ ai:
   platforms:
     - id: openai
       platform: openai
-      api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
+      api-key: ${OPENAI_API_KEY:}
       api-host: ${OPENAI_API_HOST:https://ai.962831.xyz}
-#      api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
 #      api-host: ${OPENAI_API_HOST:https://api.justwoker.icu}
       chat-completion-url: ${OPENAI_CHAT_COMPLETION_URL:/v1/chat/completions}
       responses-url: ${OPENAI_RESPONSES_URL:/v1/responses}
@@ -84,7 +83,7 @@ ai:
       responses-url: ${QWEN_RESPONSES_URL:/services/aigc/text-generation/generation}
     - id: deepseek
       platform: deepseek
-      api-key: ${DEEPSEEK_API_KEY:REMOVED_SECRET}
+      api-key: ${DEEPSEEK_API_KEY:}
       api-host: ${DEEPSEEK_API_HOST:https://api.deepseek.com}
       chat-completion-url: ${DEEPSEEK_CHAT_COMPLETION_URL:/chat/completions}
 
