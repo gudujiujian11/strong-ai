@@ -4,9 +4,9 @@
 
 **Goal:** 将现有 Markdown 优化台扩展为具备团队隔离、文档版本、质量检查、团队规范和可追踪 AI 任务的技术文档治理台。
 
-**Architecture:** 在 `mdoptimizer` 旁新增 `documentgovernance` 领域；所有 API 通过网关注入的身份上下文限定团队范围。MySQL 保存文档、不可变版本、规范和报告，Redis 保存短期任务、规则缓存和幂等键；AI 优化继续复用 `AiChatService`。
+**Architecture:** 在 `mdoptimizer` 旁新增 `documentgovernance` 领域；所有 API 通过网关注入的身份上下文限定团队范围。MySQL 保存文档、不可变版本、规范、报告和任务幂等键；AI 优化继续复用 `AiChatService`，当前阶段不启用 Redis。
 
-**Tech Stack:** Java 8、Spring Boot 2.4.2、Spring MVC/SSE、MySQL、Flyway、MyBatis-Plus、Redis、JUnit 5、Mockito、原生 HTML/CSS/JavaScript。
+**Tech Stack:** Java 8、Spring Boot 2.4.2、Spring MVC/SSE、MySQL、Flyway、MyBatis-Plus、JUnit 5、Mockito、原生 HTML/CSS/JavaScript。
 
 ## Global Constraints
 
@@ -117,7 +117,7 @@ public class DocumentIdentityInterceptor implements HandlerInterceptor {
 }
 ```
 
-Register the interceptor for `/api/document-governance/**`. Enable the already-commented MyBatis-Plus and Lettuce dependencies in `pom.xml`, then add the Spring Boot-managed `org.flywaydb:flyway-core` dependency so Spring Boot executes `db/migration/V1__document_governance.sql` at startup. Configure datasource and Redis endpoints only through Nacos `db.properties` and `cache.properties`. Replace every nonempty AI API-key fallback in `bootstrap.yml` with an empty fallback such as `${OPENAI_API_KEY:}`.
+Register the interceptor for `/api/document-governance/**`. Enable the already-commented MyBatis-Plus dependency in `pom.xml`, then add the Spring Boot-managed `org.flywaydb:flyway-core` dependency so Spring Boot executes `db/migration/V1__document_governance.sql` at startup. Configure the datasource only through Nacos `db.properties`; do not add a Redis client or `cache.properties` dependency in this phase. Replace every nonempty AI API-key fallback in `bootstrap.yml` with an empty fallback such as `${OPENAI_API_KEY:}`.
 
 Create `V1__document_governance.sql` as the following executable schema. All timestamp values are epoch milliseconds; foreign keys are intentionally omitted because the existing application uses logical deletion and scheduled retention.
 
@@ -498,7 +498,7 @@ Run: `MAVEN_OPTS='-Dfile.encoding=UTF-8' -DforkCount=0 -DfailIfNoTests=false /Us
 
 Expected: PASS.
 
-Manual check: start the application with test Nacos/MySQL/Redis configuration, open `http://localhost:11028/document-governance.html` through the authenticated gateway, then create a draft, run checks, start a failed AI task, retry it, publish a clean document, compare versions and roll back.
+Manual check: start the application with test Nacos/MySQL configuration, open `http://localhost:11028/document-governance.html` through the authenticated gateway, then create a draft, run checks, start a failed AI task, retry it, publish a clean document, compare versions and roll back.
 
 - [ ] **Step 5: Check changed files**
 

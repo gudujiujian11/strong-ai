@@ -200,4 +200,5 @@ gradle-app.setting
 /logs/*
 **/logs/*
 /arthas-output
+.worktrees/
 #**/resources/application-dev.yml

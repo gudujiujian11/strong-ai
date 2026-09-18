@@ -93,14 +93,10 @@
 
         <!--    自定义区域    -->
 
-        <!-- mysql、MyBatis-Plus 与 Redis 缓存 -->
+        <!-- mysql、MyBatis-Plus 与数据库迁移 -->
         <dependency>
             <groupId>cn.strong</groupId>
             <artifactId>strong-mybatis-plus-extend</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>cn.strong</groupId>
-            <artifactId>lettuce-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
