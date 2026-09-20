@@ -13,6 +13,9 @@ public class AiTaskEntity {
     private String teamId;
     private Long documentId;
     private String idempotencyKey;
+    private Long strategyId;
+    private Long strategyVersionId;
+    private String strategyConfigHash;
     private String createdBy;
     private String status;
     private String provider;

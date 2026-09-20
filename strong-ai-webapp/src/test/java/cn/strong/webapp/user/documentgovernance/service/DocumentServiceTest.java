@@ -7,6 +7,7 @@ import cn.strong.webapp.user.documentgovernance.entity.DocumentEntity;
 import cn.strong.webapp.user.documentgovernance.entity.DocumentVersionEntity;
 import cn.strong.webapp.user.documentgovernance.mapper.DocumentMapper;
 import cn.strong.webapp.user.documentgovernance.mapper.DocumentVersionMapper;
+import cn.strong.webapp.user.model.documentgovernance.DiffResponse;
 import cn.strong.webapp.user.model.documentgovernance.DocumentCreateRequest;
 import cn.strong.webapp.user.model.documentgovernance.DocumentSaveRequest;
 import cn.strong.webapp.user.model.documentgovernance.DocumentVersionResponse;
@@ -171,7 +172,7 @@ class DocumentServiceTest {
         when(versionMapper.selectByDocumentAndNo(1L, 1L)).thenReturn(v1);
         when(versionMapper.selectByDocumentAndNo(1L, 2L)).thenReturn(v2);
 
-        var response = service.diff(1L, 1L, "2");
+        DiffResponse response = service.diff(1L, 1L, "2");
 
         assertEquals(Long.valueOf(1L), response.getFromVersionNo());
         assertEquals(Long.valueOf(2L), response.getToVersionNo());
@@ -186,7 +187,7 @@ class DocumentServiceTest {
         when(documentMapper.selectById(1L)).thenReturn(document);
         when(versionMapper.selectByDocumentAndNo(1L, 3L)).thenReturn(version(3L, "# current"));
 
-        var response = service.diff(1L, 3L, "draft");
+        DiffResponse response = service.diff(1L, 3L, "draft");
 
         org.junit.jupiter.api.Assertions.assertTrue(response.isAgainstDraft());
         assertEquals(null, response.getToVersionNo());

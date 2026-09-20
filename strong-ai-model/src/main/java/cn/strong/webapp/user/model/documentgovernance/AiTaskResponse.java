@@ -7,6 +7,10 @@ import lombok.Data;
 public class AiTaskResponse implements Serializable {
     private Long id;
     private Long documentId;
+    private Long strategyId;
+    private Long strategyVersionId;
+    private Long strategyVersionNo;
+    private String strategyConfigHash;
     private String status;
     private String provider;
     private String model;

@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class AiOptimizeRequest implements Serializable {
     private String idempotencyKey;
+    private Long strategyId;
     private String provider = "openai";
     private String model = "gpt-5.6-sol";
     private String mode = "format";
