@@ -14,6 +14,7 @@ public class DocumentResponse implements Serializable {
     private DocumentStatus status;
     private String draftContent;
     private Long currentVersionId;
+    private Boolean hasUnpublishedChanges;
     private Long createdAt;
     private Long updatedAt;
 }

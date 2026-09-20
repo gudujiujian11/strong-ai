@@ -6,10 +6,13 @@ import cn.strong.webapp.user.documentgovernance.service.DocumentAiTaskService;
 import cn.strong.webapp.user.documentgovernance.service.QualityReportService;
 import cn.strong.webapp.user.model.documentgovernance.AiOptimizeRequest;
 import cn.strong.webapp.user.model.documentgovernance.AiTaskResponse;
+import cn.strong.webapp.user.model.documentgovernance.DiffResponse;
 import cn.strong.webapp.user.model.documentgovernance.DocumentCreateRequest;
 import cn.strong.webapp.user.model.documentgovernance.DocumentResponse;
 import cn.strong.webapp.user.model.documentgovernance.DocumentSaveRequest;
+import cn.strong.webapp.user.model.documentgovernance.DocumentStatusChangeRequest;
 import cn.strong.webapp.user.model.documentgovernance.DocumentVersionResponse;
+import cn.strong.webapp.user.model.documentgovernance.DocumentVersionSummaryResponse;
 import cn.strong.webapp.user.model.documentgovernance.QualityCheckResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -80,9 +83,31 @@ public class DocumentGovernanceController {
     }
 
     @GetMapping("/{documentId}/versions")
-    @ApiOperation("查询文档版本历史")
-    public Result<List<DocumentVersionResponse>> versions(@PathVariable("documentId") Long documentId) {
-        return Result.ok(documentService.listVersions(documentId));
+    @ApiOperation("查询文档版本历史（轻量摘要，不含全文）")
+    public Result<List<DocumentVersionSummaryResponse>> versions(@PathVariable("documentId") Long documentId) {
+        return Result.ok(documentService.listVersionSummaries(documentId));
+    }
+
+    @GetMapping("/{documentId}/versions/{versionNo}")
+    @ApiOperation("查询单个版本详情（含全文）")
+    public Result<DocumentVersionResponse> version(@PathVariable("documentId") Long documentId,
+                                                   @PathVariable("versionNo") Long versionNo) {
+        return Result.ok(documentService.getVersion(documentId, versionNo));
+    }
+
+    @GetMapping("/{documentId}/diff")
+    @ApiOperation("比较任意两个版本，或版本与当前草稿（to 传 draft）")
+    public Result<DiffResponse> diff(@PathVariable("documentId") Long documentId,
+                                     @RequestParam("from") Long from,
+                                     @RequestParam("to") String to) {
+        return Result.ok(documentService.diff(documentId, from, to));
+    }
+
+    @PostMapping("/{documentId}/status")
+    @ApiOperation("变更文档状态（归档或恢复）")
+    public Result<DocumentResponse> changeStatus(@PathVariable("documentId") Long documentId,
+                                                 @RequestBody DocumentStatusChangeRequest request) {
+        return Result.ok(documentService.changeStatus(documentId, request == null ? null : request.getStatus()));
     }
 
     @PostMapping("/{documentId}/quality-check")

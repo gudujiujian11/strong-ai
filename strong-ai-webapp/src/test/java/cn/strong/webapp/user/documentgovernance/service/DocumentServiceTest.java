@@ -37,7 +37,8 @@ class DocumentServiceTest {
     void setUp() {
         documentMapper = mock(DocumentMapper.class);
         versionMapper = mock(DocumentVersionMapper.class);
-        service = new DocumentService(documentMapper, versionMapper, new DocumentIdentityResolver());
+        service = new DocumentService(documentMapper, versionMapper, new DocumentIdentityResolver(),
+                new DocumentDiffService());
         useIdentity("u-1", "team-a", "member");
     }
 
@@ -96,6 +97,109 @@ class DocumentServiceTest {
         assertEquals(Long.valueOf(3L), restored.getVersionNo());
         assertEquals("# stable", restored.getContent());
         assertEquals("# stable", document.getDraftContent());
+    }
+
+    @Test
+    void savingDraftOnPublishedDocumentMarksUnpublishedChanges() {
+        DocumentEntity document = document("# published", "u-1");
+        document.setStatus("PUBLISHED");
+        when(documentMapper.selectById(1L)).thenReturn(document);
+        DocumentSaveRequest request = new DocumentSaveRequest();
+        request.setContent("# edited");
+
+        service.saveDraft(1L, request);
+
+        assertEquals(Integer.valueOf(1), document.getHasUnpublishedChanges());
+    }
+
+    @Test
+    void publishClearsUnpublishedChanges() {
+        DocumentEntity document = document("# draft", "u-1");
+        document.setStatus("PUBLISHED");
+        document.setHasUnpublishedChanges(1);
+        when(documentMapper.selectById(1L)).thenReturn(document);
+        when(versionMapper.maxVersionNo(1L)).thenReturn(1L);
+        doAnswer(invocation -> { invocation.<DocumentVersionEntity>getArgument(0).setId(20L); return 1; })
+                .when(versionMapper).insert(any(DocumentVersionEntity.class));
+
+        service.publish(1L, "发布");
+
+        assertEquals(Integer.valueOf(0), document.getHasUnpublishedChanges());
+    }
+
+    @Test
+    void archivedDocumentCannotBeEdited() {
+        DocumentEntity document = document("# archived", "u-1");
+        document.setStatus("ARCHIVED");
+        when(documentMapper.selectById(1L)).thenReturn(document);
+        DocumentSaveRequest request = new DocumentSaveRequest();
+        request.setContent("# edit");
+
+        assertThrows(ParamValiateException.class, () -> service.saveDraft(1L, request));
+    }
+
+    @Test
+    void statusTransitionRejectsIllegalTarget() {
+        DocumentEntity document = document("# draft", "u-1");
+        document.setStatus("DRAFT");
+        when(documentMapper.selectById(1L)).thenReturn(document);
+
+        assertThrows(ParamValiateException.class,
+                () -> service.changeStatus(1L, cn.strong.webapp.user.model.documentgovernance.DocumentStatus.PUBLISHED));
+    }
+
+    @Test
+    void archiveThenRestoreFollowsStatusMachine() {
+        DocumentEntity document = document("# doc", "u-1");
+        document.setStatus("PUBLISHED");
+        when(documentMapper.selectById(1L)).thenReturn(document);
+
+        service.changeStatus(1L, cn.strong.webapp.user.model.documentgovernance.DocumentStatus.ARCHIVED);
+        assertEquals("ARCHIVED", document.getStatus());
+
+        service.changeStatus(1L, cn.strong.webapp.user.model.documentgovernance.DocumentStatus.PUBLISHED);
+        assertEquals("PUBLISHED", document.getStatus());
+    }
+
+    @Test
+    void diffComparesAnyTwoVersions() {
+        DocumentEntity document = document("# current", "u-1");
+        document.setStatus("PUBLISHED");
+        when(documentMapper.selectById(1L)).thenReturn(document);
+        DocumentVersionEntity v1 = version(1L, "line1\nline2");
+        DocumentVersionEntity v2 = version(2L, "line1\nline2\nline3");
+        when(versionMapper.selectByDocumentAndNo(1L, 1L)).thenReturn(v1);
+        when(versionMapper.selectByDocumentAndNo(1L, 2L)).thenReturn(v2);
+
+        var response = service.diff(1L, 1L, "2");
+
+        assertEquals(Long.valueOf(1L), response.getFromVersionNo());
+        assertEquals(Long.valueOf(2L), response.getToVersionNo());
+        boolean hasInsert = response.getHunks().stream().anyMatch(h -> "INSERT".equals(h.getType()));
+        org.junit.jupiter.api.Assertions.assertTrue(hasInsert);
+    }
+
+    @Test
+    void diffAgainstDraftUsesDraftContent() {
+        DocumentEntity document = document("# current\nnew draft line", "u-1");
+        document.setStatus("PUBLISHED");
+        when(documentMapper.selectById(1L)).thenReturn(document);
+        when(versionMapper.selectByDocumentAndNo(1L, 3L)).thenReturn(version(3L, "# current"));
+
+        var response = service.diff(1L, 3L, "draft");
+
+        org.junit.jupiter.api.Assertions.assertTrue(response.isAgainstDraft());
+        assertEquals(null, response.getToVersionNo());
+    }
+
+    private DocumentVersionEntity version(long versionNo, String content) {
+        DocumentVersionEntity version = new DocumentVersionEntity();
+        version.setId(versionNo);
+        version.setDocumentId(1L);
+        version.setTeamId("team-a");
+        version.setVersionNo(versionNo);
+        version.setContent(content);
+        return version;
     }
 
     private DocumentEntity document(String content, String ownerUserId) {

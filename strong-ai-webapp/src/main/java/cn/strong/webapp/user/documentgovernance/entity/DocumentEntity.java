@@ -18,6 +18,7 @@ public class DocumentEntity {
     private String status;
     private String draftContent;
     private Long currentVersionId;
+    private Integer hasUnpublishedChanges;
     private Long createdAt;
     private Long updatedAt;
 }
