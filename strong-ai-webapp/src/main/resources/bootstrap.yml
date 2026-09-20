@@ -68,7 +68,7 @@ ai:
       platform: openai
 #      api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
 #      api-host: ${OPENAI_API_HOST:https://ai.962831.xyz}
-      api-host: ${OPENAI_API_HOST:https://1412520.cyou/v1}
+      api-host: ${OPENAI_API_HOST:https://1412520.cyou}
       api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
       chat-completion-url: ${OPENAI_CHAT_COMPLETION_URL:/v1/chat/completions}
       responses-url: ${OPENAI_RESPONSES_URL:/v1/responses}
