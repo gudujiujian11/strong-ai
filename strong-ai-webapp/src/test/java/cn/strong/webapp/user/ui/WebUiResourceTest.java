@@ -22,6 +22,8 @@ class WebUiResourceTest {
         assertTrue(html.contains("id=\"thinkingToggle\""));
         assertTrue(javascript.contains("/api/conversations"));
         assertTrue(javascript.contains("gpt-5.6-luna"));
+        assertTrue(javascript.contains("deepseek-v4.1-flash"));
+        assertFalse(javascript.contains("deepseek-chat"));
         assertTrue(javascript.contains("deepThinking"));
         assertTrue(javascript.contains("provider: \"openai\""));
         assertTrue(javascript.contains("provider: \"deepseek\""));

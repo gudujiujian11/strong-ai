@@ -21,7 +21,7 @@
             name: "DeepSeek",
             mark: "D",
             models: [
-                { id: "deepseek-chat", name: "DeepSeek Chat", description: "通用对话与内容生成" },
+                { id: "deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", description: "通用对话与内容生成" },
                 { id: "deepseek-reasoner", name: "DeepSeek Reasoner", description: "深度推理与复杂分析" }
             ]
         }
