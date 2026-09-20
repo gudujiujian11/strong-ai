@@ -77,8 +77,11 @@ class WebUiResourceTest {
         assertTrue(html.contains("质量检查"));
         assertTrue(html.contains("版本历史"));
         assertTrue(html.contains("术语库"));
+        assertTrue(html.contains("id=\"aiModelSelect\""));
         assertTrue(javascript.contains("/api/document-governance/documents"));
         assertTrue(javascript.contains("ai-tasks"));
+        assertTrue(html.contains("gpt-5.6-luna"));
+        assertTrue(javascript.contains("els.aiModelSelect.value"));
         assertTrue(javascript.contains("quality-check"));
         assertTrue(javascript.contains("versions"));
         assertFalse(javascript.contains("localStorage.setItem(\"document"));
