@@ -28,6 +28,12 @@ public class TemplateService {
         this.identityResolver = identityResolver;
     }
 
+    public List<TemplateEntity> list(String teamId) {
+        requireCurrentTeam(teamId);
+        List<TemplateEntity> templates = templateMapper.selectByTeamId(teamId);
+        return Collections.unmodifiableList(templates == null ? new ArrayList<>() : new ArrayList<>(templates));
+    }
+
     public List<String> requiredHeadings(String teamId, String documentType) {
         requireCurrentTeam(teamId);
         String key = teamId + "\u0000" + documentType;

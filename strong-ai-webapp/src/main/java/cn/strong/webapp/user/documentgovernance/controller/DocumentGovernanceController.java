@@ -1,6 +1,7 @@
 package cn.strong.webapp.user.documentgovernance.controller;
 
 import cn.strong.common.base.Result;
+import cn.strong.webapp.user.documentgovernance.entity.QualityReportEntity;
 import cn.strong.webapp.user.documentgovernance.service.DocumentService;
 import cn.strong.webapp.user.documentgovernance.service.DocumentAiTaskService;
 import cn.strong.webapp.user.documentgovernance.service.QualityReportService;
@@ -114,6 +115,18 @@ public class DocumentGovernanceController {
     @ApiOperation("运行确定性质量检查")
     public Result<QualityCheckResponse> qualityCheck(@PathVariable("documentId") Long documentId) {
         return Result.ok(qualityReportService.checkAndSave(documentId));
+    }
+
+    @GetMapping("/{documentId}/quality-report/latest")
+    @ApiOperation("查询最近一次质量报告（含问题明细）")
+    public Result<QualityCheckResponse> latestQualityReport(@PathVariable("documentId") Long documentId) {
+        return Result.ok(qualityReportService.latestReport(documentId));
+    }
+
+    @GetMapping("/{documentId}/quality-reports")
+    @ApiOperation("查询历史质量报告摘要")
+    public Result<List<QualityReportEntity>> qualityReports(@PathVariable("documentId") Long documentId) {
+        return Result.ok(qualityReportService.listReports(documentId));
     }
 
     @PostMapping("/{documentId}/ai-tasks")

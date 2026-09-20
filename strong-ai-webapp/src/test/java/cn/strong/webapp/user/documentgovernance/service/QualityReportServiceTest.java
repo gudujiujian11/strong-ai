@@ -8,6 +8,7 @@ import cn.strong.webapp.user.documentgovernance.entity.QualityReportEntity;
 import cn.strong.webapp.user.documentgovernance.mapper.QualityIssueMapper;
 import cn.strong.webapp.user.documentgovernance.mapper.QualityReportMapper;
 import cn.strong.webapp.user.model.documentgovernance.QualityCheckResponse;
+import cn.strong.webapp.user.model.documentgovernance.RuleConfig;
 import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,7 @@ class QualityReportServiceTest {
     private DocumentService documentService;
     private TemplateService templateService;
     private TermService termService;
+    private RuleSetService ruleSetService;
     private QualityReportMapper reportMapper;
     private QualityIssueMapper issueMapper;
     private QualityReportService service;
@@ -37,9 +39,11 @@ class QualityReportServiceTest {
         documentService = mock(DocumentService.class);
         templateService = mock(TemplateService.class);
         termService = mock(TermService.class);
+        ruleSetService = mock(RuleSetService.class);
         reportMapper = mock(QualityReportMapper.class);
         issueMapper = mock(QualityIssueMapper.class);
-        service = new QualityReportService(documentService, templateService, termService,
+        when(ruleSetService.effectiveConfig(any())).thenReturn(RuleConfig.defaults());
+        service = new QualityReportService(documentService, templateService, termService, ruleSetService,
                 new MarkdownQualityChecker(), reportMapper, issueMapper, new DocumentIdentityResolver());
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setAttribute(DocumentIdentityResolver.ATTRIBUTE_NAME,

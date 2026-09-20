@@ -16,4 +16,7 @@ public interface TemplateMapper extends CustomBaseMapper<TemplateEntity> {
 
     @Select("SELECT * FROM dg_template WHERE team_id = #{teamId} AND name = #{name}")
     TemplateEntity selectByTeamAndName(@Param("teamId") String teamId, @Param("name") String name);
+
+    @Select("SELECT * FROM dg_template WHERE team_id = #{teamId} ORDER BY updated_at DESC")
+    List<TemplateEntity> selectByTeamId(@Param("teamId") String teamId);
 }

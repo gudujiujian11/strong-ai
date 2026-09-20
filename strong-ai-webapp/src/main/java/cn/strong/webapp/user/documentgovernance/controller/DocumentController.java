@@ -3,10 +3,15 @@ package cn.strong.webapp.user.documentgovernance.controller;
 import cn.strong.common.base.Result;
 import cn.strong.webapp.user.documentgovernance.context.DocumentIdentity;
 import cn.strong.webapp.user.documentgovernance.context.DocumentIdentityResolver;
+import cn.strong.webapp.user.documentgovernance.entity.RuleSetEntity;
+import cn.strong.webapp.user.documentgovernance.entity.TemplateEntity;
 import cn.strong.webapp.user.documentgovernance.entity.TermEntity;
 import cn.strong.webapp.user.documentgovernance.service.DocumentAiTaskService;
+import cn.strong.webapp.user.documentgovernance.service.RuleSetService;
+import cn.strong.webapp.user.documentgovernance.service.TemplateService;
 import cn.strong.webapp.user.documentgovernance.service.TermService;
 import cn.strong.webapp.user.model.documentgovernance.AiTaskResponse;
+import cn.strong.webapp.user.model.documentgovernance.RuleSetRequest;
 import cn.strong.webapp.user.model.documentgovernance.TermRequest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -29,12 +34,17 @@ public class DocumentController {
 
     private final DocumentAiTaskService taskService;
     private final TermService termService;
+    private final TemplateService templateService;
+    private final RuleSetService ruleSetService;
     private final DocumentIdentityResolver identityResolver;
 
     public DocumentController(DocumentAiTaskService taskService, TermService termService,
+                              TemplateService templateService, RuleSetService ruleSetService,
                               DocumentIdentityResolver identityResolver) {
         this.taskService = taskService;
         this.termService = termService;
+        this.templateService = templateService;
+        this.ruleSetService = ruleSetService;
         this.identityResolver = identityResolver;
     }
 
@@ -70,5 +80,29 @@ public class DocumentController {
     @ApiOperation("维护当前团队术语")
     public Result<TermEntity> upsertTerm(@RequestBody TermRequest request) {
         return Result.ok(termService.upsert(request));
+    }
+
+    @GetMapping("/templates")
+    @ApiOperation("查询当前团队文档模板")
+    public Result<List<TemplateEntity>> templates() {
+        return Result.ok(templateService.list(identityResolver.current().getTeamId()));
+    }
+
+    @PutMapping("/templates")
+    @ApiOperation("维护当前团队文档模板")
+    public Result<TemplateEntity> upsertTemplate(@RequestBody TemplateEntity request) {
+        return Result.ok(templateService.upsert(request));
+    }
+
+    @GetMapping("/rule-sets")
+    @ApiOperation("查询当前团队规则集")
+    public Result<List<RuleSetEntity>> ruleSets() {
+        return Result.ok(ruleSetService.list(identityResolver.current().getTeamId()));
+    }
+
+    @PutMapping("/rule-sets")
+    @ApiOperation("维护当前团队规则集")
+    public Result<RuleSetEntity> upsertRuleSet(@RequestBody RuleSetRequest request) {
+        return Result.ok(ruleSetService.upsert(request));
     }
 }
