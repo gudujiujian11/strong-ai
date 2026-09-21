@@ -23,8 +23,8 @@ public class CodexResponsesService {
     private final String upstreamModel;
 
     public CodexResponsesService(ObjectMapper objectMapper,
-                                 @Value("${codex.gateway.upstream-provider:deepseek}") String upstreamProvider,
-                                 @Value("${codex.gateway.upstream-model:deepseek-v4.1-flash}") String upstreamModel) {
+                                 @Value("${codex.gateway.upstream-provider:codex-deepseek}") String upstreamProvider,
+                                 @Value("${codex.gateway.upstream-model:deepseek-chat}") String upstreamModel) {
         this.objectMapper = objectMapper;
         this.upstreamProvider = upstreamProvider;
         this.upstreamModel = upstreamModel;

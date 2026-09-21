@@ -62,6 +62,7 @@ Swagger 默认关闭。仅在测试环境通过配置中心设置 `strong.swagge
 | --- | --- | --- |
 | OpenAI | `OPENAI_API_KEY` | `OPENAI_API_HOST`、`OPENAI_CHAT_COMPLETION_URL`、`OPENAI_RESPONSES_URL` |
 | DeepSeek | `DEEPSEEK_API_KEY` | `DEEPSEEK_API_HOST`、`DEEPSEEK_CHAT_COMPLETION_URL` |
+| Codex 专用 DeepSeek | `CODEX_UPSTREAM_API_KEY` | `CODEX_UPSTREAM_API_HOST`、`CODEX_UPSTREAM_CHAT_COMPLETION_URL`、`CODEX_UPSTREAM_MODEL` |
 | 豆包 | `DOUBAO_API_KEY` | `DOUBAO_API_HOST`、`DOUBAO_CHAT_COMPLETION_URL` |
 | 通义千问 | `QWEN_API_KEY` | `QWEN_API_HOST`、`QWEN_RESPONSES_URL` |
 
@@ -86,13 +87,19 @@ Swagger 默认关闭。仅在测试环境通过配置中心设置 `strong.swagge
 
 ### Codex 网关配置
 
-网关只接受 `CODEX_GATEWAY_API_KEY`，上游 DeepSeek 使用 `DEEPSEEK_API_KEY`，地址默认
-为 `https://api.deepseek.com`。两个密钥均通过环境变量或 Nacos 密文配置注入：
+网关入站鉴权使用 `CODEX_GATEWAY_API_KEY`。Codex 请求默认通过独立的
+`codex-deepseek` provider 调用 `https://api.deepseek.com`，不复用普通聊天的代理渠道。
+上游密钥和模型分别使用 `CODEX_UPSTREAM_API_KEY` 与 `CODEX_UPSTREAM_MODEL`：
 
 ```bash
 export CODEX_GATEWAY_API_KEY='供 Codex 使用的内部密钥'
-export DEEPSEEK_API_KEY='DeepSeek API 密钥'
+export CODEX_UPSTREAM_API_KEY='允许此类请求的 DeepSeek API 密钥'
+export CODEX_UPSTREAM_MODEL='deepseek-chat'
 ```
+
+如果 Nacos 中配置了完整的 `ai.platforms` 列表，也必须在那里加入 `id=codex-deepseek`
+的同名 provider；修改上游环境变量或配置后需要重启应用。第三方代理返回 11128 时，
+表示该代理或密钥未授权当前调用渠道，Controller 无法解除该上游策略。
 
 Codex 用户配置（`~/.codex/config.toml`）示例：
 
