@@ -65,7 +65,9 @@ public class CodexController {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(responsesService.toResponse(aiChatService.chat(chatRequest)));
         }
-        return stream(chatRequest);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .body(stream(chatRequest));
     }
 
     private SseEmitter stream(AiChatRequest request) {

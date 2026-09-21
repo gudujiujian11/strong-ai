@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /** Codex Responses 协议与现有 Chat Completions 服务之间的适配器。 */
@@ -16,11 +18,16 @@ import org.springframework.stereotype.Service;
 public class CodexResponsesService {
 
     public static final String PUBLIC_MODEL = "deepseek-v4.1-flash";
-    private static final String PROVIDER = "deepseek";
     private final ObjectMapper objectMapper;
+    private final String upstreamProvider;
+    private final String upstreamModel;
 
-    public CodexResponsesService(ObjectMapper objectMapper) {
+    public CodexResponsesService(ObjectMapper objectMapper,
+                                 @Value("${codex.gateway.upstream-provider:deepseek}") String upstreamProvider,
+                                 @Value("${codex.gateway.upstream-model:deepseek-v4.1-flash}") String upstreamModel) {
         this.objectMapper = objectMapper;
+        this.upstreamProvider = upstreamProvider;
+        this.upstreamModel = upstreamModel;
     }
 
     public AiChatRequest toChatRequest(JsonNode request) {
@@ -47,7 +54,7 @@ public class CodexResponsesService {
                 if (isBlank(role) || isBlank(content)) {
                     throw new IllegalArgumentException("input 消息的 role 和 content 不能为空");
                 }
-                messages.add(new AiChatMessageRequest(role, content));
+                messages.add(new AiChatMessageRequest(normalizeRole(role), content));
             }
         } else {
             throw new IllegalArgumentException("input 必须是字符串或消息数组");
@@ -57,8 +64,8 @@ public class CodexResponsesService {
         }
 
         AiChatRequest result = new AiChatRequest();
-        result.setProvider(PROVIDER);
-        result.setModel(PUBLIC_MODEL);
+        result.setProvider(upstreamProvider);
+        result.setModel(upstreamModel);
         result.setMessages(messages);
         result.setDeepThinking("high".equals(request.path("reasoning").path("effort").asText()));
         result.setTemperature(number(request, "temperature", Float.class));
@@ -146,6 +153,18 @@ public class CodexResponsesService {
     private String text(JsonNode node, String field) {
         JsonNode value = node == null ? null : node.get(field);
         return value == null || value.isNull() ? null : value.asText();
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role.trim().toLowerCase(Locale.ROOT);
+        if ("developer".equals(normalized)) {
+            return "system";
+        }
+        if ("system".equals(normalized) || "user".equals(normalized)
+                || "assistant".equals(normalized) || "tool".equals(normalized)) {
+            return normalized;
+        }
+        throw new IllegalArgumentException("input 消息 role 不支持: " + role);
     }
 
     private String write(JsonNode node) {

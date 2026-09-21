@@ -91,6 +91,8 @@ ai:
 codex:
   gateway:
     inbound-api-key: ${CODEX_GATEWAY_API_KEY:REMOVED_SECRET}
+    upstream-provider: ${CODEX_UPSTREAM_PROVIDER:deepseek}
+    upstream-model: ${CODEX_UPSTREAM_MODEL:deepseek-v4.1-flash}
 
 feign:
   httpclient: # 开启 HttpClient
