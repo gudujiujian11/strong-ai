@@ -119,6 +119,21 @@ class AiChatServiceTest {
     }
 
     @Test
+    void shouldMapPublicDeepSeekFlashNameToUpstreamModel() throws Exception {
+        AiServiceRegistry registry = mock(AiServiceRegistry.class);
+        IChatService chatService = mock(IChatService.class);
+        when(registry.contains("deepseek")).thenReturn(true);
+        when(registry.getChatService("deepseek")).thenReturn(chatService);
+        when(chatService.chatCompletion(any(ChatCompletion.class))).thenReturn(chatResponse("deepseek-flash"));
+
+        new AiChatService(registry).chat(chatRequest("deepseek", "deepseek-v4.1-flash"));
+
+        ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
+        verify(chatService).chatCompletion(captor.capture());
+        assertEquals("deepseek-flash", captor.getValue().getModel());
+    }
+
+    @Test
     void shouldCreateMultimodalImageRequest() throws Exception {
         AiServiceRegistry registry = mock(AiServiceRegistry.class);
         IChatService chatService = mock(IChatService.class);

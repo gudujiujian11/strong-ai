@@ -81,6 +81,31 @@ Swagger 默认关闭。仅在测试环境通过配置中心设置 `strong.swagge
 | 文档治理 | `/api/document-governance/documents` | 文档草稿、发布、回滚、版本和质量检查 |
 | 文档治理 | `/api/document-governance/ai-tasks/{taskId}` | 查询 AI 优化任务及 SSE 状态流 |
 | 文档治理 | `/api/document-governance/terms` | 查询或维护当前团队术语 |
+| Codex 网关 | `POST /api/codex/v1/responses` | 固定使用 `deepseek-v4.1-flash` 的 Responses 兼容接口 |
+| Codex 网关 | `GET /api/codex/v1/models` | 返回固定模型列表 |
+
+### Codex 网关配置
+
+网关只接受 `CODEX_GATEWAY_API_KEY`，上游 DeepSeek 使用 `DEEPSEEK_API_KEY`，地址默认
+为 `https://api.deepseek.com`。两个密钥均通过环境变量或 Nacos 密文配置注入：
+
+```bash
+export CODEX_GATEWAY_API_KEY='供 Codex 使用的内部密钥'
+export DEEPSEEK_API_KEY='DeepSeek API 密钥'
+```
+
+Codex 用户配置（`~/.codex/config.toml`）示例：
+
+```toml
+model = "deepseek-v4.1-flash"
+model_provider = "strong_ai"
+
+[model_providers.strong_ai]
+name = "Strong AI DeepSeek V4.1 Flash"
+base_url = "https://your-domain.example.com/api/codex/v1"
+env_key = "CODEX_GATEWAY_API_KEY"
+wire_api = "responses"
+```
 
 ### AI 聊天示例
 

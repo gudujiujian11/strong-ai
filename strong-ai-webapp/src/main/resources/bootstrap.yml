@@ -66,10 +66,8 @@ ai:
   platforms:
     - id: openai
       platform: openai
-#      api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
-#      api-host: ${OPENAI_API_HOST:https://ai.962831.xyz}
-      api-host: ${OPENAI_API_HOST:https://1412520.cyou}
-      api-key: ${OPENAI_API_KEY:REMOVED_SECRET}
+      api-host: ${OPENAI_API_HOST:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:}
       chat-completion-url: ${OPENAI_CHAT_COMPLETION_URL:/v1/chat/completions}
       responses-url: ${OPENAI_RESPONSES_URL:/v1/responses}
     - id: doubao
@@ -84,9 +82,13 @@ ai:
       responses-url: ${QWEN_RESPONSES_URL:/services/aigc/text-generation/generation}
     - id: deepseek
       platform: deepseek
-      api-key: ${DEEPSEEK_API_KEY:REMOVED_SECRET}
-      api-host: ${DEEPSEEK_API_HOST:https://1412520.cyou}
+      api-key: ${DEEPSEEK_API_KEY:}
+      api-host: ${DEEPSEEK_API_HOST:https://api.deepseek.com}
       chat-completion-url: ${DEEPSEEK_CHAT_COMPLETION_URL:/chat/completions}
+
+codex:
+  gateway:
+    inbound-api-key: ${CODEX_GATEWAY_API_KEY:}
 
 feign:
   httpclient: # 开启 HttpClient

@@ -33,7 +33,7 @@ public class AiChatService {
         IChatService chatService = service(provider);
 
         ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
-                .model(request.getModel().trim())
+                .model(upstreamModel(request.getModel(), provider))
                 .messages(toMessages(request.getMessages()))
                 .stream(Boolean.FALSE);
         if (request.getTemperature() != null) {
@@ -99,7 +99,7 @@ public class AiChatService {
         IChatService chatService = service(provider);
 
         ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
-                .model(request.getModel().trim())
+                .model(upstreamModel(request.getModel(), provider))
                 .messages(toMessages(request.getMessages()))
                 .stream(Boolean.TRUE);
         if (request.getTemperature() != null) {
@@ -143,6 +143,14 @@ public class AiChatService {
             return;
         }
         builder.maxTokens(maxTokens);
+    }
+
+    private String upstreamModel(String model, String provider) {
+        String normalized = model.trim();
+        if ("deepseek".equals(provider) && "deepseek-v4.1-flash".equalsIgnoreCase(normalized)) {
+            return "deepseek-flash";
+        }
+        return normalized;
     }
 
     private void setDeepThinking(ChatCompletion.ChatCompletionBuilder builder, AiChatRequest request,
