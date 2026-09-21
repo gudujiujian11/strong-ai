@@ -28,6 +28,10 @@ class WebUiResourceTest {
         assertTrue(javascript.contains("deepThinking"));
         assertTrue(javascript.contains("开启深度思考"));
         assertTrue(javascript.contains("关闭深度思考"));
+        assertTrue(javascript.contains(
+                "const DEFAULT_MODEL = { provider: \"deepseek\", model: \"deepseek-v4.1-flash\" };"));
+        assertTrue(javascript.contains(
+                "conversation.provider === \"deepseek\" && conversation.model === \"deepseek-v4.1-flash\""));
         assertTrue(javascript.contains("provider: \"openai\""));
         assertTrue(javascript.contains("provider: \"deepseek\""));
         assertTrue(javascript.contains("response.body"));

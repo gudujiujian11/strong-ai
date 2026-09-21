@@ -27,7 +27,7 @@
         }
     ];
 
-    const DEFAULT_MODEL = { provider: "openai", model: "gpt-5.6-sol" };
+    const DEFAULT_MODEL = { provider: "deepseek", model: "deepseek-v4.1-flash" };
     const state = {
         conversations: [],
         activeId: null,
@@ -320,7 +320,10 @@
     }
 
     function supportsDeepThinking(conversation) {
-        return conversation.provider === "openai" && conversation.model.startsWith("gpt-5.6");
+        const supportsOpenAi = conversation.provider === "openai"
+            && conversation.model.startsWith("gpt-5.6");
+        const supportsDeepSeek = conversation.provider === "deepseek" && conversation.model === "deepseek-v4.1-flash";
+        return supportsOpenAi || supportsDeepSeek;
     }
 
     async function toggleDeepThinking() {

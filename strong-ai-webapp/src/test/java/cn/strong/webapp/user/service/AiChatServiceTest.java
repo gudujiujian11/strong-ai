@@ -135,6 +135,44 @@ class AiChatServiceTest {
     }
 
     @Test
+    void shouldEnableDeepThinkingForDeepSeekFlash() throws Exception {
+        AiServiceRegistry registry = mock(AiServiceRegistry.class);
+        IChatService chatService = mock(IChatService.class);
+        when(registry.contains("deepseek")).thenReturn(true);
+        when(registry.getChatService("deepseek")).thenReturn(chatService);
+        when(chatService.chatCompletion(any(ChatCompletion.class)))
+                .thenReturn(chatResponse("deepseek-v4.1-flash"));
+
+        AiChatRequest request = chatRequest("deepseek", "deepseek-v4.1-flash");
+        request.setDeepThinking(Boolean.TRUE);
+        new AiChatService(registry).chat(request);
+
+        ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
+        verify(chatService).chatCompletion(captor.capture());
+        assertEquals("enabled", ((java.util.Map<?, ?>) captor.getValue()
+                .getExtraBody().get("thinking")).get("type"));
+    }
+
+    @Test
+    void shouldDisableDeepThinkingForDeepSeekFlash() throws Exception {
+        AiServiceRegistry registry = mock(AiServiceRegistry.class);
+        IChatService chatService = mock(IChatService.class);
+        when(registry.contains("deepseek")).thenReturn(true);
+        when(registry.getChatService("deepseek")).thenReturn(chatService);
+        when(chatService.chatCompletion(any(ChatCompletion.class)))
+                .thenReturn(chatResponse("deepseek-v4.1-flash"));
+
+        AiChatRequest request = chatRequest("deepseek", "deepseek-v4.1-flash");
+        request.setDeepThinking(Boolean.FALSE);
+        new AiChatService(registry).chat(request);
+
+        ArgumentCaptor<ChatCompletion> captor = ArgumentCaptor.forClass(ChatCompletion.class);
+        verify(chatService).chatCompletion(captor.capture());
+        assertEquals("disabled", ((java.util.Map<?, ?>) captor.getValue()
+                .getExtraBody().get("thinking")).get("type"));
+    }
+
+    @Test
     void shouldCreateMultimodalImageRequest() throws Exception {
         AiServiceRegistry registry = mock(AiServiceRegistry.class);
         IChatService chatService = mock(IChatService.class);

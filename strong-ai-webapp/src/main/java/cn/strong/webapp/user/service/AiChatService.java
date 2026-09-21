@@ -151,6 +151,11 @@ public class AiChatService {
                 && request.getModel().trim().toLowerCase(Locale.ROOT).startsWith("gpt-5.6")) {
             builder.parameter("reasoning_effort", Boolean.TRUE.equals(request.getDeepThinking()) ? "medium" : "none");
         }
+        if ("deepseek".equals(provider)
+                && "deepseek-v4.1-flash".equals(request.getModel().trim().toLowerCase(Locale.ROOT))) {
+            builder.extraBody("thinking", java.util.Collections.singletonMap(
+                    "type", Boolean.TRUE.equals(request.getDeepThinking()) ? "enabled" : "disabled"));
+        }
     }
 
     private void validate(AiChatRequest request, boolean stream) {
