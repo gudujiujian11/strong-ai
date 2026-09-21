@@ -7,35 +7,35 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CodexControllerTest {
 
     @Test
-    void returnsEventStreamContentTypeForStreamingResponses() throws Exception {
+    void returnsSseEmitterForStreamingResponses() throws Exception {
         AiChatService aiChatService = mock(AiChatService.class);
         CodexResponsesService responsesService = mock(CodexResponsesService.class);
         HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+        AiChatController aiChatController = mock(AiChatController.class);
         AiChatRequest chatRequest = new AiChatRequest();
+        SseEmitter expected = new SseEmitter();
         when(httpRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("Bearer inbound-key");
         when(responsesService.toChatRequest(any())).thenReturn(chatRequest);
-        doNothing().when(aiChatService).chatStream(any(), any());
+        when(aiChatController.chatStream(chatRequest)).thenReturn(expected);
         CodexController controller = new CodexController(aiChatService, responsesService,
-                new ObjectMapper(), Runnable::run, "inbound-key");
+                "inbound-key", aiChatController);
 
         Object result = controller.responses(
                 new ObjectMapper().readTree("{\"stream\":true}"), httpRequest);
 
-        assertTrue(result instanceof ResponseEntity);
-        ResponseEntity<?> response = (ResponseEntity<?>) result;
-        assertEquals(MediaType.TEXT_EVENT_STREAM, response.getHeaders().getContentType());
+        assertEquals(expected, result);
+        verify(aiChatController).chatStream(chatRequest);
     }
 }

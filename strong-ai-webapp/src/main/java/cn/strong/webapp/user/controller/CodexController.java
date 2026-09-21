@@ -4,16 +4,10 @@ import cn.strong.webapp.user.model.request.AiChatRequest;
 import cn.strong.webapp.user.service.AiChatService;
 import cn.strong.webapp.user.service.CodexResponsesService;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.lnyocly.ai4j.listener.SseListener;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,19 +27,16 @@ public class CodexController {
 
     private final AiChatService aiChatService;
     private final CodexResponsesService responsesService;
-    private final ObjectMapper objectMapper;
-    private final TaskExecutor taskExecutor;
+    private final AiChatController aiChatController;
     private final String inboundApiKey;
 
     public CodexController(AiChatService aiChatService,
                            CodexResponsesService responsesService,
-                           ObjectMapper objectMapper,
-                           @Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor,
-                           @Value("${codex.gateway.inbound-api-key:}") String inboundApiKey) {
+                           @Value("${codex.gateway.inbound-api-key:}") String inboundApiKey,
+                           AiChatController aiChatController) {
         this.aiChatService = aiChatService;
         this.responsesService = responsesService;
-        this.objectMapper = objectMapper;
-        this.taskExecutor = taskExecutor;
+        this.aiChatController = aiChatController;
         this.inboundApiKey = inboundApiKey;
     }
 
@@ -65,67 +56,7 @@ public class CodexController {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(responsesService.toResponse(aiChatService.chat(chatRequest)));
         }
-        return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(stream(chatRequest));
-    }
-
-    private SseEmitter stream(AiChatRequest request) {
-        SseEmitter emitter = new SseEmitter(0L);
-        AtomicBoolean completed = new AtomicBoolean(false);
-        SseListener listener = new SseListener() {
-            @Override
-            protected void send() {
-                String data = getCurrData();
-                try {
-                    if ("[DONE]".equalsIgnoreCase(data)) {
-                        if (completed.compareAndSet(false, true)) {
-                            emitter.send(SseEmitter.event().name("response.completed")
-                                    .data(responsesService.completedEvent(), MediaType.APPLICATION_JSON));
-                            emitter.complete();
-                        }
-                        return;
-                    }
-                    String event = responsesService.toOutputTextDelta(data);
-                    if (event != null && !completed.get()) {
-                        emitter.send(SseEmitter.event().name("response.output_text.delta")
-                                .data(event, MediaType.APPLICATION_JSON));
-                    }
-                } catch (IOException ex) {
-                    completed.set(true);
-                    cancelStream();
-                    emitter.complete();
-                }
-            }
-        };
-        emitter.onCompletion(() -> {
-            completed.set(true);
-            listener.cancelStream();
-        });
-        emitter.onTimeout(() -> {
-            completed.set(true);
-            listener.cancelStream();
-        });
-        taskExecutor.execute(() -> {
-            try {
-                aiChatService.chatStream(request, listener);
-                if (completed.compareAndSet(false, true)) {
-                    emitter.send(SseEmitter.event().name("response.completed")
-                            .data(responsesService.completedEvent(), MediaType.APPLICATION_JSON));
-                    emitter.complete();
-                }
-            } catch (Exception ex) {
-                if (completed.compareAndSet(false, true)) {
-                    try {
-                        emitter.send(SseEmitter.event().name("error").data(error(ex), MediaType.APPLICATION_JSON));
-                    } catch (IOException ignored) {
-                        // 客户端已断开连接。
-                    }
-                    emitter.complete();
-                }
-            }
-        });
-        return emitter;
+        return aiChatController.chatStream(chatRequest);
     }
 
     private void authenticate(HttpServletRequest request) {
@@ -141,13 +72,4 @@ public class CodexController {
         }
     }
 
-    private String error(Exception ex) {
-        String message = ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage();
-        try {
-            return objectMapper.createObjectNode().put("type", "error").put("message",
-                    message == null ? ex.getClass().getSimpleName() : message).toString();
-        } catch (Exception ignored) {
-            return "{\"type\":\"error\",\"message\":\"调用失败\"}";
-        }
-    }
 }
