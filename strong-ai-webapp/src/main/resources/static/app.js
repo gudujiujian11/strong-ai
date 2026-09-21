@@ -315,6 +315,7 @@
         elements.thinkingToggle.disabled = state.streaming;
         elements.thinkingToggle.classList.toggle("active", enabled);
         elements.thinkingToggle.setAttribute("aria-pressed", String(enabled));
+        elements.thinkingToggle.setAttribute("aria-label", enabled ? "关闭深度思考" : "开启深度思考");
         elements.thinkingToggle.title = enabled ? "关闭深度思考" : "开启深度思考";
     }
 
