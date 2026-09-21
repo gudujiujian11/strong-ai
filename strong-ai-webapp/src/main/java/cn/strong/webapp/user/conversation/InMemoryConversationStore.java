@@ -8,10 +8,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
 /** JVM-local store intended for development only; data is lost when the service restarts. */
 @Repository
+@ConditionalOnProperty(prefix = "strong.conversation", name = "store", havingValue = "memory")
 public class InMemoryConversationStore implements ConversationStore {
 
     private final ConcurrentMap<String, Conversation> conversations = new ConcurrentHashMap<>();
