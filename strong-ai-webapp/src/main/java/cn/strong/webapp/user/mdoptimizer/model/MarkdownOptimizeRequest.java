@@ -35,4 +35,6 @@ public class MarkdownOptimizeRequest implements Serializable {
     private Boolean deepThinking = Boolean.FALSE;
     @ApiModelProperty("最大输出 token 数")
     private Integer maxTokens = 8192;
+    @ApiModelProperty("已编译的系统提示词；非空时覆盖内置提示词，用于 AI 优化策略")
+    private String systemPromptOverride;
 }

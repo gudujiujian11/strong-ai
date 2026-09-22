@@ -22,4 +22,10 @@ public interface AiOptimizationStrategyVersionMapper extends CustomBaseMapper<Ai
     @Select("SELECT * FROM dg_ai_optimization_strategy_version WHERE team_id = #{teamId} AND strategy_id = #{strategyId} AND status = 'PUBLISHED' ORDER BY version_no DESC")
     List<AiOptimizationStrategyVersionEntity> selectPublishedByStrategyId(@Param("teamId") String teamId,
                                                                           @Param("strategyId") Long strategyId);
+
+    @Select("SELECT COALESCE(MAX(version_no), 0) FROM dg_ai_optimization_strategy_version WHERE team_id = #{teamId} AND strategy_id = #{strategyId}")
+    Long selectMaxVersionNo(@Param("teamId") String teamId, @Param("strategyId") Long strategyId);
+
+    @Select("SELECT * FROM dg_ai_optimization_strategy_version WHERE team_id = #{teamId} AND id = #{id}")
+    AiOptimizationStrategyVersionEntity selectByTeamAndId(@Param("teamId") String teamId, @Param("id") Long id);
 }

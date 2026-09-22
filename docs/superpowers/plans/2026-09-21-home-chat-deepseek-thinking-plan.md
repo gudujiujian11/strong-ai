@@ -159,7 +159,7 @@ Expected: `WebUiResourceTest` 全部 PASS。
 - Consumes: Task 1 和 Task 2 的完整行为。
 - Produces: 可交付的首页 DeepSeek 深度思考功能。
 
-- [ ] **Step 1: 运行全部相关测试**
+- [x] **Step 1: 运行全部相关测试**
 
 ```bash
 MAVEN_OPTS='-Dfile.encoding=UTF-8' /Users/zhangchunxia/jdk/apache-maven-3.6.3/bin/mvn -pl strong-ai-webapp -am -DforkCount=0 -DfailIfNoTests=false -Dtest=AiChatServiceTest,WebUiResourceTest test
@@ -167,7 +167,7 @@ MAVEN_OPTS='-Dfile.encoding=UTF-8' /Users/zhangchunxia/jdk/apache-maven-3.6.3/bi
 
 Expected: 两个测试类全部 PASS，构建为 `BUILD SUCCESS`。
 
-- [ ] **Step 2: 检查改动范围**
+- [x] **Step 2: 检查改动范围**
 
 ```bash
 git diff --check

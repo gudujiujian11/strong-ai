@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface AiOptimizationStrategyMapper extends CustomBaseMapper<AiOptimizationStrategyEntity> {
@@ -25,4 +26,7 @@ public interface AiOptimizationStrategyMapper extends CustomBaseMapper<AiOptimiz
     @ResultMap("strategy")
     @Select("SELECT * FROM dg_ai_optimization_strategy WHERE team_id = #{teamId} AND name = #{name}")
     AiOptimizationStrategyEntity selectByTeamAndName(@Param("teamId") String teamId, @Param("name") String name);
+
+    @Update("UPDATE dg_ai_optimization_strategy SET is_default = 0, updated_at = #{updatedAt} WHERE team_id = #{teamId} AND is_default = 1")
+    int clearDefault(@Param("teamId") String teamId, @Param("updatedAt") Long updatedAt);
 }

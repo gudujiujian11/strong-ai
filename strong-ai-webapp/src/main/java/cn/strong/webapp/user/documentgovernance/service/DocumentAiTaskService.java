@@ -3,14 +3,18 @@ package cn.strong.webapp.user.documentgovernance.service;
 import cn.strong.common.exception.ParamValiateException;
 import cn.strong.webapp.user.documentgovernance.context.DocumentIdentity;
 import cn.strong.webapp.user.documentgovernance.context.DocumentIdentityResolver;
+import cn.strong.webapp.user.documentgovernance.entity.AiOptimizationStrategyVersionEntity;
 import cn.strong.webapp.user.documentgovernance.entity.AiTaskEntity;
 import cn.strong.webapp.user.documentgovernance.entity.DocumentEntity;
+import cn.strong.webapp.user.documentgovernance.mapper.AiOptimizationStrategyVersionMapper;
 import cn.strong.webapp.user.documentgovernance.mapper.AiTaskMapper;
+import cn.strong.webapp.user.model.documentgovernance.AiOptimizationStrategyConfig;
 import cn.strong.webapp.user.mdoptimizer.model.MarkdownOptimizeRequest;
 import cn.strong.webapp.user.mdoptimizer.model.MarkdownOptimizeResponse;
 import cn.strong.webapp.user.mdoptimizer.service.MarkdownOptimizerService;
 import cn.strong.webapp.user.model.documentgovernance.AiOptimizeRequest;
 import cn.strong.webapp.user.model.documentgovernance.AiTaskResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +41,10 @@ public class DocumentAiTaskService {
     private final MarkdownOptimizerService optimizer;
     private final TaskExecutor taskExecutor;
     private final DocumentIdentityResolver identityResolver;
+    private final AiOptimizationStrategyService strategyService;
+    private final AiOptimizationStrategyVersionMapper strategyVersionMapper;
+    private final AiOptimizationStrategyCompiler strategyCompiler;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<Long, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     @Autowired(required = false)
@@ -48,12 +56,18 @@ public class DocumentAiTaskService {
     public DocumentAiTaskService(DocumentService documentService, AiTaskMapper taskMapper,
                                  MarkdownOptimizerService optimizer,
                                  @Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor,
-                                 DocumentIdentityResolver identityResolver) {
+                                 DocumentIdentityResolver identityResolver,
+                                 AiOptimizationStrategyService strategyService,
+                                 AiOptimizationStrategyVersionMapper strategyVersionMapper,
+                                 AiOptimizationStrategyCompiler strategyCompiler) {
         this.documentService = documentService;
         this.taskMapper = taskMapper;
         this.optimizer = optimizer;
         this.taskExecutor = taskExecutor;
         this.identityResolver = identityResolver;
+        this.strategyService = strategyService;
+        this.strategyVersionMapper = strategyVersionMapper;
+        this.strategyCompiler = strategyCompiler;
     }
 
     public AiTaskResponse submit(Long documentId, AiOptimizeRequest request) {
@@ -164,15 +178,46 @@ public class DocumentAiTaskService {
         task.setDocumentId(document.getId());
         task.setIdempotencyKey(idempotencyKey);
         task.setCreatedBy(identityResolver.current().getUserId());
+        applyStrategy(task, document.getTeamId(), request);
         reset(task, request, now);
         task.setCreatedAt(now);
         return task;
     }
 
+    /** 解析并固化策略版本；找到已发布版本时同时固化策略的模型参数。 */
+    private void applyStrategy(AiTaskEntity task, String teamId, AiOptimizeRequest request) {
+        AiOptimizationStrategyVersionEntity version = strategyService.resolveExecutable(teamId, request.getStrategyId());
+        if (version == null) {
+            return;
+        }
+        task.setStrategyId(version.getStrategyId());
+        task.setStrategyVersionId(version.getId());
+        task.setStrategyConfigHash(version.getConfigHash());
+        AiOptimizationStrategyConfig config = parseConfig(version.getConfigJson());
+        if (config != null && config.getModel() != null) {
+            task.setProvider(safe(config.getModel().getProvider(), "openai"));
+            task.setModel(safe(config.getModel().getName(), "gpt-5.6-sol"));
+        }
+    }
+
+    private AiOptimizationStrategyConfig parseConfig(String configJson) {
+        if (configJson == null || configJson.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(configJson, AiOptimizationStrategyConfig.class);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private void reset(AiTaskEntity task, AiOptimizeRequest request, long now) {
         task.setStatus(PENDING);
-        task.setProvider(required(request.getProvider(), "AI provider 不能为空"));
-        task.setModel(required(request.getModel(), "AI model 不能为空"));
+        if (task.getStrategyVersionId() == null) {
+            // 非策略任务：模型参数由请求决定。策略任务在创建时已固化 provider/model，重试沿用不重解析。
+            task.setProvider(required(request.getProvider(), "AI provider 不能为空"));
+            task.setModel(required(request.getModel(), "AI model 不能为空"));
+        }
         task.setResultSummary("");
         task.setErrorCode("");
         task.setPromptTokens(null);
@@ -189,7 +234,36 @@ public class DocumentAiTaskService {
         request.setDocumentType(document.getDocumentType());
         request.setProvider(task.getProvider());
         request.setModel(task.getModel());
+        if (task.getStrategyVersionId() != null) {
+            applyStrategyContext(request, document, task);
+        }
         return request;
+    }
+
+    /** 读取任务固化的策略版本，编译系统提示词并完整映射模型参数。 */
+    private void applyStrategyContext(MarkdownOptimizeRequest request, DocumentEntity document, AiTaskEntity task) {
+        AiOptimizationStrategyVersionEntity version =
+                strategyVersionMapper.selectByTeamAndId(task.getTeamId(), task.getStrategyVersionId());
+        if (version == null) {
+            throw new IllegalStateException("strategy version not found");
+        }
+        AiOptimizationStrategyConfig config = parseConfig(version.getConfigJson());
+        if (config == null) {
+            throw new IllegalStateException("strategy config invalid");
+        }
+        request.setSystemPromptOverride(
+                strategyCompiler.compileSystemPrompt(config, document.getDocumentType(), null));
+        if (config.getModel() != null) {
+            request.setProvider(safe(config.getModel().getProvider(), request.getProvider()));
+            request.setModel(safe(config.getModel().getName(), request.getModel()));
+            request.setDeepThinking(Boolean.TRUE.equals(config.getModel().getDeepThinking()));
+            if (config.getModel().getMaxTokens() != null && config.getModel().getMaxTokens() > 0) {
+                request.setMaxTokens(config.getModel().getMaxTokens());
+            }
+        }
+        if (config.getConstraints() != null && config.getConstraints().getMode() != null) {
+            request.setMode(config.getConstraints().getMode());
+        }
     }
 
     private void schedule(Long taskId) {
@@ -259,6 +333,16 @@ public class DocumentAiTaskService {
         AiTaskResponse response = new AiTaskResponse();
         response.setId(task.getId());
         response.setDocumentId(task.getDocumentId());
+        response.setStrategyId(task.getStrategyId());
+        response.setStrategyVersionId(task.getStrategyVersionId());
+        response.setStrategyConfigHash(task.getStrategyConfigHash());
+        if (task.getStrategyVersionId() != null) {
+            AiOptimizationStrategyVersionEntity version =
+                    strategyVersionMapper.selectByTeamAndId(task.getTeamId(), task.getStrategyVersionId());
+            if (version != null) {
+                response.setStrategyVersionNo(version.getVersionNo());
+            }
+        }
         response.setStatus(task.getStatus());
         response.setProvider(task.getProvider());
         response.setModel(task.getModel());
