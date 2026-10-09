@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f7f5">
+    <title>Strong AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/app.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+    <div class="sidebar-scrim" id="sidebarScrim" aria-hidden="true"></div>
+    <aside class="sidebar" id="sidebar" aria-label="会话导航">
+        <div class="brand-row">
+            <a class="brand" href="/" aria-label="Strong AI 首页">
+                <span class="brand-mark">S</span>
+                <span>Strong AI</span>
+            </a>
+            <button class="icon-button sidebar-close" id="sidebarClose" type="button" aria-label="关闭会话列表" title="关闭">
+                <i data-lucide="panel-left-close"></i>
+            </button>
+        </div>
+
+        <button class="new-chat-button" id="newChatButton" type="button">
+            <i data-lucide="square-pen"></i>
+            <span>新建对话</span>
+            <kbd>⌘ K</kbd>
+        </button>
+
+        <a class="module-link" href="/md-optimizer.html">
+            <i data-lucide="file-pen-line"></i>
+            <span>Markdown 优化台</span>
+            <i data-lucide="arrow-up-right"></i>
+        </a>
+        <a class="module-link" href="/document-governance.html">
+            <i data-lucide="notebook-tabs"></i>
+            <span>技术文档治理台</span>
+            <i data-lucide="arrow-up-right"></i>
+        </a>
+
+        <label class="session-search" for="sessionSearch">
+            <i data-lucide="search"></i>
+            <input id="sessionSearch" type="search" placeholder="搜索会话" autocomplete="off">
+        </label>
+
+        <nav class="session-list" id="sessionList" aria-label="历史会话"></nav>
+
+        <div class="sidebar-footer">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>对话已保存在此浏览器</span>
+        </div>
+    </aside>
+
+    <main class="main-panel">
+        <header class="topbar">
+            <button class="icon-button sidebar-open" id="sidebarOpen" type="button" aria-label="打开会话列表" title="会话列表">
+                <i data-lucide="panel-left"></i>
+            </button>
+
+            <div class="model-picker">
+                <button class="model-trigger" id="modelTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="provider-mark" id="providerMark">O</span>
+                    <span class="model-trigger-copy">
+                        <strong id="selectedModelName">GPT-5.6 Sol</strong>
+                        <small id="selectedProviderName">OpenAI</small>
+                    </span>
+                    <i data-lucide="chevrons-up-down"></i>
+                </button>
+                <div class="model-menu" id="modelMenu" role="listbox" aria-label="选择模型" hidden></div>
+            </div>
+
+            <div class="topbar-actions">
+                <button class="icon-button" id="clearChatButton" type="button" aria-label="清空当前会话" title="清空会话">
+                    <i data-lucide="eraser"></i>
+                </button>
+                <button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换主题">
+                    <i data-lucide="moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <section class="chat-viewport" id="chatViewport" aria-live="polite">
+            <div class="message-column" id="messageColumn"></div>
+        </section>
+
+        <section class="composer-dock" aria-label="发送消息">
+            <form class="composer" id="composer">
+                <textarea id="messageInput" rows="1" maxlength="12000" placeholder="给 Strong AI 发送消息" aria-label="消息内容"></textarea>
+                <div class="composer-row">
+                    <span class="model-chip" id="composerModelChip"></span>
+                    <button class="thinking-toggle" id="thinkingToggle" type="button" aria-pressed="false" aria-label="深度思考" title="开启深度思考">
+                        <i data-lucide="brain-circuit"></i>
+                        <span>深度思考</span>
+                    </button>
+                    <span class="character-count" id="characterCount">0 / 12000</span>
+                    <button class="send-button" id="sendButton" type="submit" aria-label="发送消息" title="发送">
+                        <i data-lucide="arrow-up"></i>
+                    </button>
+                    <button class="stop-button" id="stopButton" type="button" aria-label="停止生成" title="停止生成" hidden>
+                        <i data-lucide="square"></i>
+                    </button>
+                </div>
+            </form>
+            <p class="composer-caption">AI 生成内容可能不准确，请核对重要信息。</p>
+        </section>
+    </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
