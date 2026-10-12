@@ -56,7 +56,7 @@
                 <label class="file-drop image-drop" id="imageDrop" for="imageInput" hidden>
                     <i data-lucide="scan-text"></i>
                     <strong>上传截图或图片</strong>
-                    <span>支持 PNG、JPEG、WebP、GIF · 最大 10 MB</span>
+                    <span>支持 PNG、JPEG、WebP、GIF · 最大 10 MB · 可直接粘贴图片</span>
                     <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif">
                     <img id="imagePreview" alt="图片预览" hidden>
                     <small id="imageName"></small>
@@ -84,7 +84,7 @@
                         <label class="field"><span>文档类型</span><select id="documentType"><option value="通用 Markdown 文档">通用 Markdown 文档</option><option value="README">README</option><option value="API 接口文档">API 接口文档</option><option value="技术方案">技术方案</option><option value="产品需求文档">产品需求文档</option><option value="会议纪要">会议纪要</option></select></label>
                         <label class="field"><span>目标读者</span><select id="audience"><option value="通用读者">通用读者</option><option value="开发者">开发者</option><option value="产品和业务团队">产品和业务团队</option><option value="管理者">管理者</option><option value="外部客户">外部客户</option></select></label>
                     </div>
-                    <label class="field model-field"><span>AI 模型</span><select id="modelSelect"><option value="openai:gpt-5.6-sol">GPT-5.6 Sol · OpenAI</option><option value="openai:gpt-5.6-luna">GPT-5.6 Luna · OpenAI</option><option value="deepseek:deepseek-chat">DeepSeek Chat</option><option value="deepseek:deepseek-reasoner">DeepSeek Reasoner</option></select></label>
+                    <label class="field model-field"><span>AI 模型</span><select id="modelSelect"><option value="openai:gpt-5.6-sol">GPT-5.6 Sol · OpenAI</option><option value="openai:gpt-5.6-luna">GPT-5.6 Luna · OpenAI</option><option value="xai:grok-4.7">Grok 4.7 · xAI</option><option value="deepseek:deepseek-chat">DeepSeek Chat</option><option value="deepseek:deepseek-reasoner">DeepSeek Reasoner</option></select></label>
                     <div class="protect-row">
                         <label><input id="preserveCode" type="checkbox" checked><span>保留代码块</span></label>
                         <label><input id="preserveLinks" type="checkbox" checked><span>保留链接</span></label>

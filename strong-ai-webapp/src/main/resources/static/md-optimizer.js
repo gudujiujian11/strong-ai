@@ -25,6 +25,7 @@
         els.markdownInput.addEventListener("input", () => { updateInputState(); clearValidation(); });
         els.fileInput.addEventListener("change", handleFile);
         els.imageInput.addEventListener("change", (event) => { const file = event.target.files[0]; if (file) selectImage(file); });
+        document.addEventListener("paste", handlePaste);
         ["dragenter", "dragover"].forEach((eventName) => els.fileDrop.addEventListener(eventName, (event) => { event.preventDefault(); els.fileDrop.classList.add("dragging"); }));
         ["dragleave", "drop"].forEach((eventName) => els.fileDrop.addEventListener(eventName, (event) => { event.preventDefault(); els.fileDrop.classList.remove("dragging"); }));
         els.fileDrop.addEventListener("drop", (event) => { const file = event.dataTransfer.files[0]; if (file) readFile(file); });
@@ -74,6 +75,25 @@
     }
 
     function handleFile(event) { const file = event.target.files[0]; if (file) readFile(file); }
+
+    function handlePaste(event) {
+        const items = event.clipboardData && event.clipboardData.items;
+        if (!items) return;
+        const extensions = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" };
+        for (let index = 0; index < items.length; index++) {
+            const item = items[index];
+            if (item.kind !== "file" || !extensions[item.type]) continue;
+            const file = item.getAsFile();
+            if (!file) continue;
+            event.preventDefault();
+            selectSource("image");
+            const namedFile = /\.(png|jpe?g|webp|gif)$/i.test(file.name || "")
+                ? file
+                : new File([file], `pasted-image.${extensions[file.type]}`, { type: file.type });
+            selectImage(namedFile);
+            return;
+        }
+    }
 
     function selectImage(file) {
         const supported = ["image/png", "image/jpeg", "image/webp", "image/gif"];
