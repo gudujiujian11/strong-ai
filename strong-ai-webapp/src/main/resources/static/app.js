@@ -12,8 +12,16 @@
             models: [
                 { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", description: "复杂推理与代码任务" },
                 { id: "gpt-5.6-luna", name: "GPT-5.6 Luna", description: "快速推理与日常任务" },
-                { id: "gpt-4o", name: "GPT-4o", description: "通用多模态模型" },
-                { id: "gpt-4o-mini", name: "GPT-4o mini", description: "快速、轻量的日常问答" }
+                { id: "gpt-4o", name: "GPT-4o", description: "通用多模态模型", supportsImage: true },
+                { id: "gpt-4o-mini", name: "GPT-4o mini", description: "快速、轻量的日常问答", supportsImage: true }
+            ]
+        },
+        {
+            provider: "xai",
+            name: "xAI",
+            mark: "G",
+            models: [
+                { id: "grok-4.7", name: "Grok 4.7", description: "通用对话与复杂推理" }
             ]
         },
         {
@@ -34,7 +42,8 @@
         search: "",
         streaming: false,
         controller: null,
-        toastTimer: null
+        toastTimer: null,
+        drafts: {}
     };
 
     const elements = {};
@@ -47,7 +56,8 @@
             "sessionSearch", "sessionList", "modelTrigger", "modelMenu", "providerMark",
             "selectedModelName", "selectedProviderName", "clearChatButton", "themeButton",
             "chatViewport", "messageColumn", "composer", "messageInput", "composerModelChip",
-            "characterCount", "thinkingToggle", "sendButton", "stopButton", "toast"
+            "characterCount", "thinkingToggle", "sendButton", "stopButton", "toast",
+            "imageButton", "imageInput", "attachmentDraft"
         ].forEach((id) => { elements[id] = document.getElementById(id); });
 
         applyInitialTheme();
@@ -80,6 +90,17 @@
         elements.composer.addEventListener("submit", handleSubmit);
         elements.messageInput.addEventListener("input", updateComposer);
         elements.messageInput.addEventListener("keydown", handleComposerKeydown);
+        elements.imageButton.addEventListener("click", () => elements.imageInput.click());
+        elements.imageInput.addEventListener("change", handleImageSelection);
+        elements.composer.addEventListener("paste", handleComposerPaste);
+        elements.composer.addEventListener("dragover", (event) => {
+            if (event.dataTransfer && Array.from(event.dataTransfer.items).some((item) => item.type.startsWith("image/"))) {
+                event.preventDefault();
+                elements.composer.classList.add("dragging");
+            }
+        });
+        elements.composer.addEventListener("dragleave", () => elements.composer.classList.remove("dragging"));
+        elements.composer.addEventListener("drop", handleImageDrop);
         elements.stopButton.addEventListener("click", stopGeneration);
         elements.messageColumn.addEventListener("click", handleMessageAction);
 
@@ -150,6 +171,7 @@
         renderSelectedModel();
         renderMessages();
         updateComposer();
+        renderAttachmentDraft();
     }
 
     function renderSessions() {
@@ -286,6 +308,10 @@
         const option = event.target.closest("[data-model]");
         if (!option || state.streaming) return;
         const conversation = activeConversation();
+        if (conversationHasImage(conversation) && !modelSupportsImage(option.dataset.provider, option.dataset.model)) {
+            showToast("当前会话包含图片，不能切换到不支持图片的模型");
+            return;
+        }
         const updated = await requestJson(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}`, {
             method: "PUT",
             body: JSON.stringify({ provider: option.dataset.provider, model: option.dataset.model,
@@ -384,9 +410,15 @@
     function messageTemplate(message, index) {
         const isUser = message.role === "user";
         const statusClass = message.status === "error" ? "error" : "";
+        const attachments = (message.attachments || []).map((attachment) => `
+            <a class="message-attachment" href="${escapeHtml(attachment.previewUrl)}" target="_blank" rel="noreferrer">
+                <img src="${escapeHtml(attachment.previewUrl)}" alt="${escapeHtml(attachment.name || "图片")}" loading="lazy">
+                <span>${escapeHtml(attachment.name || "图片")}</span>
+            </a>
+        `).join("");
         const body = message.status === "error"
             ? `<div class="message-error">${escapeHtml(message.error || "请求失败，请稍后重试。")}</div>`
-            : (isUser ? escapeHtml(message.content) : renderMarkdown(message.content));
+            : `${attachments}${isUser ? escapeHtml(message.content) : renderMarkdown(message.content)}`;
         const reasoning = !isUser && message.reasoning
             ? `<details class="reasoning" ${message.status === "streaming" && !message.content ? "open" : ""}>
                    <summary>思考过程</summary>
@@ -442,29 +474,46 @@
     async function handleSubmit(event) {
         event.preventDefault();
         const content = elements.messageInput.value.trim();
-        if (!content || state.streaming) return;
+        const conversation = activeConversation();
+        const draft = currentDraft();
+        if ((!content && !draft) || state.streaming) return;
+        if (draft && !modelSupportsImage(conversation.provider, conversation.model)) {
+            showToast("当前模型不支持图片输入，请切换到 GPT-4o 或 GPT-4o mini");
+            return;
+        }
 
         elements.messageInput.value = "";
         updateComposer();
-        await generateReply(activeConversation(), null, content);
+        await generateReply(conversation, null, content, draft);
     }
 
-    async function generateReply(conversation, regenerateMessageId, userContent) {
+    async function generateReply(conversation, regenerateMessageId, userContent, draft) {
         let endpoint;
         let requestOptions = { method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" } };
         if (regenerateMessageId) {
             endpoint = `${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}/messages/${encodeURIComponent(regenerateMessageId)}/regenerate/stream`;
         } else {
             endpoint = `${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversation.id)}/messages/stream`;
-            requestOptions.body = JSON.stringify({ content: userContent });
+            if (draft) {
+                try {
+                    draft.attachmentId = draft.attachmentId || await uploadAttachment(conversation.id, draft);
+                } catch (error) {
+                    elements.messageInput.value = userContent || "";
+                    updateComposer();
+                    showToast(cleanError(error.message));
+                    return;
+                }
+            }
+            requestOptions.body = JSON.stringify({ content: userContent, attachmentIds: draft ? [draft.attachmentId] : [] });
         }
         state.streaming = true;
         state.controller = new AbortController();
         updateStreamingControls();
         renderMessages();
         let assistant = { id: `streaming-${Date.now()}`, role: "assistant", content: "", reasoning: "", provider: conversation.provider, model: conversation.model, status: "streaming" };
-        if (!regenerateMessageId && userContent) {
-            conversation.messages.push({ id: createId(), role: "user", content: userContent, createdAt: Date.now() });
+        if (!regenerateMessageId && (userContent || draft)) {
+            conversation.messages.push({ id: createId(), role: "user", content: userContent,
+                attachments: draft ? [{ name: draft.name, previewUrl: draft.previewUrl }] : [], createdAt: Date.now() });
         } else {
             conversation.messages = conversation.messages.filter((message) => message.id !== regenerateMessageId);
         }
@@ -479,6 +528,14 @@
             }
             if (!response.body) throw new Error("浏览器未收到流式响应");
             await consumeEventStream(response.body, (eventName, data) => {
+                if (eventName === "accepted") {
+                    if (draft && state.drafts[conversation.id] === draft) {
+                        if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl);
+                        delete state.drafts[conversation.id];
+                        renderAttachmentDraft();
+                    }
+                    return;
+                }
                 if (eventName === "error") throw new Error(data || "模型服务返回错误");
                 if (eventName === "done" || data === "[DONE]") return;
                 const chunk = extractChunk(data);
@@ -586,6 +643,7 @@
         elements.sendButton.hidden = state.streaming;
         elements.stopButton.hidden = !state.streaming;
         elements.messageInput.disabled = state.streaming;
+        elements.imageButton.disabled = state.streaming;
         elements.modelTrigger.disabled = state.streaming;
         renderDeepThinkingToggle(activeConversation());
         updateComposer();
@@ -597,7 +655,103 @@
         input.style.height = "auto";
         input.style.height = `${Math.min(input.scrollHeight, 190)}px`;
         elements.characterCount.textContent = `${input.value.length} / 12000`;
-        elements.sendButton.disabled = state.streaming || !input.value.trim();
+        elements.sendButton.disabled = state.streaming || (!input.value.trim() && !currentDraft());
+        renderAttachmentDraft();
+    }
+
+    function currentDraft() {
+        return state.activeId ? state.drafts[state.activeId] : null;
+    }
+
+    function handleImageSelection(event) {
+        const file = event.target.files && event.target.files[0];
+        event.target.value = "";
+        if (file) selectImage(file);
+    }
+
+    function handleComposerPaste(event) {
+        const files = Array.from((event.clipboardData && event.clipboardData.files) || []);
+        const image = files.find((file) => file.type.startsWith("image/"));
+        if (image) {
+            event.preventDefault();
+            selectImage(image);
+        }
+    }
+
+    function handleImageDrop(event) {
+        event.preventDefault();
+        elements.composer.classList.remove("dragging");
+        const image = Array.from((event.dataTransfer && event.dataTransfer.files) || [])
+            .find((file) => file.type.startsWith("image/"));
+        if (image) selectImage(image);
+    }
+
+    function selectImage(file) {
+        if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+            showToast("仅支持 PNG、JPEG 或 WebP 图片");
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            showToast("图片大小不能超过 10 MB");
+            return;
+        }
+        if (!state.activeId) return;
+        const previous = currentDraft();
+        if (previous && !window.confirm("当前已有图片，是否替换？")) return;
+        if (previous && previous.previewUrl) URL.revokeObjectURL(previous.previewUrl);
+        state.drafts[state.activeId] = { file, name: file.name || "图片", size: file.size,
+            previewUrl: URL.createObjectURL(file), attachmentId: null };
+        renderAttachmentDraft();
+        updateComposer();
+    }
+
+    function renderAttachmentDraft() {
+        const draft = currentDraft();
+        if (!draft) {
+            elements.attachmentDraft.hidden = true;
+            elements.attachmentDraft.innerHTML = "";
+            return;
+        }
+        elements.attachmentDraft.hidden = false;
+        elements.attachmentDraft.innerHTML = `<img src="${escapeHtml(draft.previewUrl)}" alt=""><span>${escapeHtml(draft.name)} · ${formatBytes(draft.size)}</span><button type="button" data-remove-attachment aria-label="移除图片" title="移除"><i data-lucide="x"></i></button>`;
+        elements.attachmentDraft.querySelector("[data-remove-attachment]").onclick = removeDraft;
+        refreshIcons();
+    }
+
+    function removeDraft() {
+        const draft = currentDraft();
+        if (!draft) return;
+        if (draft.previewUrl) URL.revokeObjectURL(draft.previewUrl);
+        if (draft.attachmentId && state.activeId) {
+            fetch(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(state.activeId)}/attachments/${encodeURIComponent(draft.attachmentId)}`, { method: "DELETE" }).catch(() => {});
+        }
+        delete state.drafts[state.activeId];
+        renderAttachmentDraft();
+        updateComposer();
+    }
+
+    async function uploadAttachment(conversationId, draft) {
+        const formData = new FormData();
+        formData.append("image", draft.file);
+        const response = await fetch(`${CONVERSATIONS_ENDPOINT}/${encodeURIComponent(conversationId)}/attachments`, { method: "POST", body: formData });
+        if (!response.ok) throw new Error(await responseError(response));
+        const result = await response.json();
+        if (result && result.success === false) throw new Error(result.message || "图片上传失败");
+        return result.data.id;
+    }
+
+    function formatBytes(size) {
+        if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+        return `${(size / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function conversationHasImage(conversation) {
+        return Boolean(conversation && conversation.messages.some((message) => message.attachments && message.attachments.length));
+    }
+
+    function modelSupportsImage(provider, model) {
+        const info = findModel(provider, model);
+        return Boolean(info.model.supportsImage);
     }
 
     function handleComposerKeydown(event) {

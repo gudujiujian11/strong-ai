@@ -865,6 +865,71 @@ a {
     transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.composer.dragging {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.attachment-draft {
+    display: flex;
+    min-height: 64px;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px 0;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.attachment-draft img {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+    object-fit: cover;
+    border-radius: 6px;
+    background: var(--surface-hover);
+}
+
+.attachment-draft span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-draft button,
+.attach-button {
+    display: inline-grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    cursor: pointer;
+    place-items: center;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--subtle);
+}
+
+.attachment-draft button {
+    margin-left: auto;
+}
+
+.attachment-draft button:hover,
+.attach-button:hover:not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--ink);
+}
+
+.attachment-draft svg,
+.attach-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.attach-button:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
 .composer:focus-within {
     border-color: color-mix(in srgb, var(--accent) 65%, var(--line));
     box-shadow: 0 12px 35px rgba(31, 33, 29, 0.12);
@@ -904,6 +969,31 @@ a {
     font-size: 10px;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.message-attachment {
+    display: inline-flex;
+    max-width: min(100%, 320px);
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 10px;
+    text-decoration: none;
+}
+
+.message-attachment img {
+    display: block;
+    width: min(100%, 300px);
+    max-height: 240px;
+    object-fit: contain;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-hover);
+}
+
+.message-attachment:hover {
+    color: var(--accent);
 }
 
 .thinking-toggle {

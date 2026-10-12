@@ -2,6 +2,7 @@ package cn.strong.webapp.user.conversation;
 
 import cn.strong.webapp.user.model.conversation.Conversation;
 import cn.strong.webapp.user.model.conversation.ConversationMessage;
+import cn.strong.webapp.user.model.conversation.ConversationAttachment;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -67,6 +68,19 @@ public class InMemoryConversationStore implements ConversationStore {
             targetMessage.setCompletionTokens(sourceMessage.getCompletionTokens());
             targetMessage.setTotalTokens(sourceMessage.getTotalTokens());
             targetMessage.setCreatedAt(sourceMessage.getCreatedAt());
+            List<ConversationAttachment> attachments = new ArrayList<>();
+            for (ConversationAttachment sourceAttachment : sourceMessage.getAttachments()) {
+                ConversationAttachment targetAttachment = new ConversationAttachment();
+                targetAttachment.setId(sourceAttachment.getId());
+                targetAttachment.setName(sourceAttachment.getName());
+                targetAttachment.setContentType(sourceAttachment.getContentType());
+                targetAttachment.setSize(sourceAttachment.getSize());
+                targetAttachment.setStatus(sourceAttachment.getStatus());
+                targetAttachment.setPreviewUrl(sourceAttachment.getPreviewUrl());
+                targetAttachment.setExpiresAt(sourceAttachment.getExpiresAt());
+                attachments.add(targetAttachment);
+            }
+            targetMessage.setAttachments(attachments);
             messages.add(targetMessage);
         }
         target.setMessages(messages);

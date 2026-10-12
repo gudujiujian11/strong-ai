@@ -2,12 +2,14 @@ package cn.strong.webapp.user.controller;
 
 import cn.strong.common.base.Result;
 import cn.strong.webapp.user.model.conversation.Conversation;
+import cn.strong.webapp.user.model.conversation.ConversationAttachment;
 import cn.strong.webapp.user.model.request.AiChatRequest;
 import cn.strong.webapp.user.model.request.ConversationChatRequest;
 import cn.strong.webapp.user.model.request.ConversationCreateRequest;
 import cn.strong.webapp.user.model.request.ConversationUpdateRequest;
 import cn.strong.webapp.user.service.AiChatService;
 import cn.strong.webapp.user.service.ConversationService;
+import cn.strong.webapp.user.service.ConversationAttachmentService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.lnyocly.ai4j.listener.SseListener;
@@ -16,10 +18,13 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.io.IOException;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,7 +32,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
@@ -37,13 +44,15 @@ public class ConversationController {
 
     private final ConversationService conversationService;
     private final AiChatService aiChatService;
+    private final ConversationAttachmentService attachmentService;
     private final TaskExecutor taskExecutor;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ConversationController(ConversationService conversationService, AiChatService aiChatService,
-                                  TaskExecutor taskExecutor) {
+                                  ConversationAttachmentService attachmentService, TaskExecutor taskExecutor) {
         this.conversationService = conversationService;
         this.aiChatService = aiChatService;
+        this.attachmentService = attachmentService;
         this.taskExecutor = taskExecutor;
     }
 
@@ -90,11 +99,39 @@ public class ConversationController {
         return Result.ok(conversationService.clearMessages(id));
     }
 
+    @PostMapping(value = "/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiOperation("上传会话图片附件")
+    public Result<ConversationAttachment> uploadAttachment(@PathVariable("id") String id,
+                                                            @RequestParam("image") MultipartFile image) {
+        return Result.ok(attachmentService.upload(id, image));
+    }
+
+    @GetMapping("/{id}/attachments/{attachmentId}")
+    @ApiOperation("读取会话图片附件")
+    public ResponseEntity<byte[]> readAttachment(@PathVariable("id") String id,
+                                                  @PathVariable("attachmentId") String attachmentId) {
+        cn.strong.webapp.user.conversation.ConversationAttachmentData data =
+                attachmentService.read(id, attachmentId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(data.getMetadata().getContentType()))
+                .contentLength(data.getContent().length)
+                .body(data.getContent());
+    }
+
+    @DeleteMapping("/{id}/attachments/{attachmentId}")
+    @ApiOperation("删除未发送的会话图片附件")
+    public Result<Void> deleteAttachment(@PathVariable("id") String id,
+                                         @PathVariable("attachmentId") String attachmentId) {
+        attachmentService.deleteUnbound(id, attachmentId);
+        return Result.ok();
+    }
+
     @PostMapping(value = "/{id}/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @ApiOperation("追加用户消息并基于服务端历史流式生成回复")
     public SseEmitter chatStream(@PathVariable("id") String id, @RequestBody ConversationChatRequest request) {
-        AiChatRequest chatRequest = conversationService.prepareChatRequest(id, request.getContent());
-        return stream(id, chatRequest);
+        ConversationService.PreparedChat prepared = conversationService.prepareChat(
+                id, request.getContent(), request.getAttachmentIds());
+        return stream(id, prepared.getRequest(), prepared);
     }
 
     @PostMapping(value = "/{id}/messages/{messageId}/regenerate/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -102,16 +139,29 @@ public class ConversationController {
     public SseEmitter regenerateStream(@PathVariable("id") String id,
                                        @PathVariable("messageId") String messageId) {
         AiChatRequest chatRequest = conversationService.prepareRegenerateRequest(id, messageId);
-        return stream(id, chatRequest);
+        return stream(id, chatRequest, null);
     }
 
-    private SseEmitter stream(String conversationId, AiChatRequest request) {
+    private SseEmitter stream(String conversationId, AiChatRequest request,
+                              ConversationService.PreparedChat prepared) {
         SseEmitter emitter = new SseEmitter(0L);
         AtomicBoolean completed = new AtomicBoolean(false);
         AtomicBoolean saved = new AtomicBoolean(false);
         StringBuilder content = new StringBuilder();
         StringBuilder reasoning = new StringBuilder();
         AtomicReference<SseListener> listenerRef = new AtomicReference<>();
+        if (prepared != null) {
+            try {
+                Map<String, Object> accepted = new LinkedHashMap<>();
+                accepted.put("userMessageId", prepared.getUserMessageId());
+                accepted.put("attachmentIds", prepared.getAttachmentIds());
+                emitter.send(SseEmitter.event().name("accepted")
+                        .data(objectMapper.writeValueAsString(accepted), MediaType.APPLICATION_JSON));
+            } catch (IOException ex) {
+                emitter.completeWithError(ex);
+                return emitter;
+            }
+        }
         Runnable saveReply = () -> {
             if (saved.compareAndSet(false, true)) {
                 Usage usage = listenerUsage(listenerRef.get());

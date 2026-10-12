@@ -1,6 +1,7 @@
 package cn.strong.webapp.user.service;
 
 import cn.strong.common.exception.ParamValiateException;
+import cn.strong.webapp.user.model.request.AiChatContentPart;
 import cn.strong.webapp.user.model.request.AiChatMessageRequest;
 import cn.strong.webapp.user.model.request.AiChatRequest;
 import cn.strong.webapp.user.model.response.AiChatResponse;
@@ -9,6 +10,7 @@ import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletion;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatCompletionResponse;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.ChatMessage;
 import io.github.lnyocly.ai4j.platform.openai.chat.entity.Choice;
+import io.github.lnyocly.ai4j.platform.openai.chat.entity.Content;
 import io.github.lnyocly.ai4j.service.IChatService;
 import io.github.lnyocly.ai4j.service.factory.AiServiceRegistry;
 import org.springframework.stereotype.Service;
@@ -172,7 +174,8 @@ public class AiChatService {
             throw new ParamValiateException("当前接口暂不支持 stream=true");
         }
         for (AiChatMessageRequest message : request.getMessages()) {
-            if (message == null || isBlank(message.getRole()) || isBlank(message.getContent())) {
+            if (message == null || isBlank(message.getRole())
+                    || (isBlank(message.getContent()) && !hasImage(message))) {
                 throw new ParamValiateException("消息 role 和 content 不能为空");
             }
         }
@@ -181,9 +184,42 @@ public class AiChatService {
     private List<ChatMessage> toMessages(List<AiChatMessageRequest> messages) {
         List<ChatMessage> result = new ArrayList<>(messages.size());
         for (AiChatMessageRequest message : messages) {
-            result.add(new ChatMessage(message.getRole().trim(), message.getContent()));
+            if (message.getContentParts() == null || message.getContentParts().isEmpty()) {
+                result.add(new ChatMessage(message.getRole().trim(), message.getContent()));
+                continue;
+            }
+            List<Content.MultiModal> parts = new ArrayList<>();
+            for (AiChatContentPart part : message.getContentParts()) {
+                if (part == null || part.getType() == null) {
+                    continue;
+                }
+                if ("image_url".equals(part.getType())) {
+                    parts.add(new Content.MultiModal("image_url", null,
+                            new Content.MultiModal.ImageUrl(part.getImageUrl())));
+                } else if ("text".equals(part.getType())) {
+                    parts.add(new Content.MultiModal("text", part.getText(), null));
+                }
+            }
+            if (parts.isEmpty()) {
+                result.add(new ChatMessage(message.getRole().trim(), message.getContent()));
+            } else {
+                result.add(ChatMessage.builder().role(message.getRole().trim())
+                        .content(Content.ofMultiModals(parts)).build());
+            }
         }
         return result;
+    }
+
+    private boolean hasImage(AiChatMessageRequest message) {
+        if (message.getContentParts() == null) {
+            return false;
+        }
+        for (AiChatContentPart part : message.getContentParts()) {
+            if (part != null && "image_url".equals(part.getType()) && !isBlank(part.getImageUrl())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private AiChatResponse toResponse(String provider, ChatCompletionResponse response) {

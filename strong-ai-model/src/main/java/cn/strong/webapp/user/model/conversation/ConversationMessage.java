@@ -3,6 +3,8 @@ package cn.strong.webapp.user.model.conversation;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -29,4 +31,6 @@ public class ConversationMessage implements Serializable {
     private Long totalTokens;
     @ApiModelProperty("创建时间戳")
     private long createdAt;
+    @ApiModelProperty("消息图片附件")
+    private List<ConversationAttachment> attachments = new ArrayList<>();
 }

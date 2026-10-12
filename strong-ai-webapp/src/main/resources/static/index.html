@@ -90,8 +90,13 @@
 
         <section class="composer-dock" aria-label="发送消息">
             <form class="composer" id="composer">
+                <div class="attachment-draft" id="attachmentDraft" hidden></div>
                 <textarea id="messageInput" rows="1" maxlength="12000" placeholder="给 Strong AI 发送消息" aria-label="消息内容"></textarea>
+                <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
                 <div class="composer-row">
+                    <button class="attach-button" id="imageButton" type="button" aria-label="添加图片" title="添加图片">
+                        <i data-lucide="image-plus"></i>
+                    </button>
                     <span class="model-chip" id="composerModelChip"></span>
                     <button class="thinking-toggle" id="thinkingToggle" type="button" aria-pressed="false" aria-label="深度思考" title="开启深度思考">
                         <i data-lucide="brain-circuit"></i>
