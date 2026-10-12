@@ -6,7 +6,9 @@
     const MAX_ARCHIVE_ENTRIES = 100;
     const MAX_EXTRACTED_SIZE = 50 * 1024 * 1024;
     const MAX_ENTRY_SIZE = 20 * 1024 * 1024;
-    const state = { sourceType: "text", mode: "format", result: null, view: "preview", loading: false, archive: null, objectUrls: [], image: null, imageUrl: null };
+    const HISTORY_API = "/api/md-optimizer/image-history";
+    const state = { sourceType: "text", mode: "format", result: null, view: "preview", loading: false, archive: null, objectUrls: [], image: null, imageUrl: null, historyId: null };
+    const history = { page: 1, pageSize: 20, total: 0, items: [], loading: false };
     const $ = (id) => document.getElementById(id);
     const els = {};
 
@@ -14,6 +16,7 @@
 
     function initialize() {
         ["themeButton", "markdownInput", "fileInput", "fileDrop", "fileName", "imageDrop", "imageInput", "imagePreview", "imageName", "contentCount", "validationMessage", "documentType", "audience", "modelSelect", "preserveCode", "preserveLinks", "optimizeButton", "parseImageButton", "resultState", "resultEmpty", "markdownPreview", "diffView", "sourceView", "resultSummary", "summaryText", "copyButton", "downloadButton", "retryButton", "toast"].forEach((id) => { els[id] = $(id); });
+        ["historyButton", "imageHistoryPanel", "refreshHistoryButton", "historyMessage", "historyList", "historyPageInfo", "historyPreviousButton", "historyNextButton"].forEach((id) => { els[id] = $(id); });
         applyTheme();
         bindEvents();
         refreshIcons();
@@ -40,10 +43,26 @@
         els.retryButton.addEventListener("click", () => state.sourceType === "image" ? parseImage() : optimize());
         els.copyButton.addEventListener("click", copyResult);
         els.downloadButton.addEventListener("click", downloadResult);
+        els.historyButton.addEventListener("click", () => {
+            const open = els.imageHistoryPanel.hidden;
+            els.imageHistoryPanel.hidden = !open;
+            els.historyButton.setAttribute("aria-expanded", String(open));
+            if (open) loadHistory(1);
+        });
+        els.refreshHistoryButton.addEventListener("click", () => loadHistory(history.page));
+        els.historyPreviousButton.addEventListener("click", () => loadHistory(history.page - 1));
+        els.historyNextButton.addEventListener("click", () => loadHistory(history.page + 1));
+        els.historyList.addEventListener("click", (event) => {
+            const button = event.target.closest("button[data-history-id]");
+            if (!button || button.disabled) return;
+            if (button.dataset.historyAction === "view") viewHistory(button.dataset.historyId);
+            else deleteHistory(button.dataset.historyId);
+        });
         document.addEventListener("keydown", (event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); if (!els.optimizeButton.disabled) optimize(); } });
     }
 
     function selectSource(sourceType) {
+        if (state.loading) return;
         state.sourceType = sourceType;
         if (sourceType === "text") {
             clearArchive();
@@ -67,6 +86,13 @@
         els.optimizeButton.hidden = imageMode;
         els.parseImageButton.hidden = !imageMode;
         els.parseImageButton.disabled = state.loading || !state.image;
+        els.retryButton.disabled = state.loading || (imageMode ? !state.image : !els.markdownInput.value.trim());
+        els.imageInput.disabled = state.loading;
+        els.fileInput.disabled = state.loading;
+        els.markdownInput.disabled = state.loading;
+        els.modelSelect.disabled = state.loading;
+        document.querySelectorAll("[data-source-tab]").forEach((button) => { button.disabled = state.loading; });
+        updateHistoryControls();
     }
 
     function selectMode(mode) {
@@ -77,6 +103,7 @@
     function handleFile(event) { const file = event.target.files[0]; if (file) readFile(file); }
 
     function handlePaste(event) {
+        if (state.loading) return;
         const items = event.clipboardData && event.clipboardData.items;
         if (!items) return;
         const extensions = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" };
@@ -96,15 +123,18 @@
     }
 
     function selectImage(file) {
+        if (state.loading) return;
         const supported = ["image/png", "image/jpeg", "image/webp", "image/gif"];
         if (!supported.includes(file.type) || !/\.(png|jpe?g|webp|gif)$/i.test(file.name)) { showValidation("仅支持 PNG、JPEG、WebP 或 GIF 图片"); return; }
         if (file.size > 10 * 1024 * 1024) { showValidation("图片大小不能超过 10 MB"); return; }
         if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
         state.image = file;
+        state.historyId = null;
         state.imageUrl = URL.createObjectURL(file);
         els.imagePreview.src = state.imageUrl;
         els.imagePreview.hidden = false;
         els.imageName.textContent = file.name;
+        renderHistory();
         clearValidation();
         updateInputState();
     }
@@ -113,9 +143,11 @@
         if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
         state.image = null;
         state.imageUrl = null;
+        state.historyId = null;
         if (els.imagePreview) { els.imagePreview.hidden = true; els.imagePreview.removeAttribute("src"); }
         if (els.imageName) els.imageName.textContent = "";
         if (els.imageInput) els.imageInput.value = "";
+        renderHistory();
     }
 
     async function parseImage() {
@@ -132,9 +164,11 @@
             form.append("model", parts.slice(1).join(":"));
             form.append("maxTokens", "8192");
             state.result = await requestMultipart("/api/md-optimizer/parse-image", form);
+            state.historyId = state.result.jobId;
             renderResult();
             setState("已完成", "success");
-            showToast("图片解析完成");
+            showToast("图片解析完成，已保存历史");
+            if (!els.imageHistoryPanel.hidden) loadHistory(1);
         } catch (error) {
             setState("处理失败", "error");
             showValidation(cleanError(error.message));
@@ -146,6 +180,7 @@
     }
 
     function readFile(file) {
+        if (state.loading) return;
         if (/\.zip$/i.test(file.name)) { readZip(file); return; }
         if (!/\.(md|markdown)$/i.test(file.name)) { showValidation("只支持 .md、.markdown 或 .zip 文件"); return; }
         clearArchive();
@@ -395,6 +430,135 @@
 
     async function requestJson(url, body) { const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const payload = await response.json().catch(() => null); if (!response.ok || (payload && payload.success === false)) throw new Error(payload && (payload.message || payload.msg) || "请求失败"); return payload && payload.data !== undefined ? payload.data : payload; }
     async function requestMultipart(url, body) { const response = await fetch(url, { method: "POST", body: body }); const payload = await response.json().catch(() => null); if (!response.ok || (payload && payload.success === false)) throw new Error(payload && (payload.message || payload.msg) || "请求失败"); return payload && payload.data !== undefined ? payload.data : payload; }
+
+    async function historyRequest(url, method) {
+        const response = await fetch(url, { method: method || "GET", cache: "no-store" });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload || payload.success === false) throw new Error(payload && (payload.message || payload.msg) || "历史记录请求失败");
+        return payload.data !== undefined ? payload.data : payload;
+    }
+
+    async function loadHistory(page) {
+        if (history.loading) return;
+        history.loading = true;
+        els.historyMessage.textContent = "正在加载历史记录…";
+        updateHistoryControls();
+        try {
+            let result = await historyRequest(`${HISTORY_API}?page=${Math.max(1, page)}&pageSize=${history.pageSize}`);
+            const lastPage = Math.max(1, Math.ceil(result.total / history.pageSize));
+            if (result.page > lastPage) result = await historyRequest(`${HISTORY_API}?page=${lastPage}&pageSize=${history.pageSize}`);
+            history.page = result.page;
+            history.total = result.total;
+            history.items = result.items || [];
+            renderHistory();
+            els.historyMessage.textContent = history.items.length ? "" : "暂无图片解析历史，解析成功后会自动保存。";
+        } catch (error) {
+            els.historyMessage.textContent = cleanError(error.message);
+        } finally {
+            history.loading = false;
+            updateHistoryControls();
+        }
+    }
+
+    function renderHistory() {
+        els.historyList.innerHTML = history.items.map((item) => {
+            const selected = item.id === state.historyId;
+            const date = new Date(item.createdAt).toLocaleString("zh-CN", { hour12: false });
+            const model = [item.provider, item.model].filter(Boolean).join(" / ");
+            return `<li class="history-item${selected ? " active" : ""}"><div class="history-item-info"><strong>${escapeHtml(item.originalName)}</strong><small>${escapeHtml(date)} · ${escapeHtml(model)} · ${Math.round(item.sizeBytes / 1024)} KB · 解析成功</small></div><div class="history-item-actions"><button class="history-action" type="button" data-history-action="view" data-history-id="${escapeHtml(item.id)}">${selected ? "正在查看" : "查看"}</button><button class="history-action delete" type="button" data-history-action="delete" data-history-id="${escapeHtml(item.id)}">删除</button></div></li>`;
+        }).join("");
+        updateHistoryControls();
+    }
+
+    function updateHistoryControls() {
+        const busy = history.loading || state.loading;
+        const pages = Math.max(1, Math.ceil(history.total / history.pageSize));
+        els.refreshHistoryButton.disabled = busy;
+        els.historyPreviousButton.disabled = busy || history.page <= 1;
+        els.historyNextButton.disabled = busy || history.page >= pages;
+        els.historyPageInfo.textContent = `共 ${history.total} 条 · 第 ${history.page} / ${pages} 页`;
+        els.historyList.querySelectorAll("button").forEach((button) => { button.disabled = busy; });
+    }
+
+    async function viewHistory(id) {
+        if (state.loading || history.loading) return;
+        state.loading = true;
+        updateInputState();
+        try {
+            const url = `${HISTORY_API}/${encodeURIComponent(id)}`;
+            const detail = await historyRequest(url);
+            if (!detail.result) throw new Error("历史记录缺少解析结果");
+            const response = await fetch(url + "/image", { cache: "no-store" });
+            if (!response.ok || !/^image\/(png|jpeg|webp|gif)(;|$)/i.test(response.headers.get("Content-Type") || "")) {
+                const payload = await response.json().catch(() => null);
+                throw new Error(payload && (payload.message || payload.msg) || "历史原图不存在或读取失败");
+            }
+            const blob = await response.blob();
+            const file = new File([blob], detail.originalName, { type: detail.contentType });
+            clearArchive();
+            clearImage();
+            state.sourceType = "image";
+            state.image = file;
+            state.imageUrl = URL.createObjectURL(file);
+            state.historyId = id;
+            state.result = detail.result;
+            els.imagePreview.src = state.imageUrl;
+            els.imagePreview.hidden = false;
+            els.imageName.textContent = detail.originalName;
+            document.querySelectorAll("[data-source-tab]").forEach((button) => { const active = button.dataset.sourceTab === "image"; button.classList.toggle("active", active); button.setAttribute("aria-selected", String(active)); });
+            if (detail.provider && detail.model) {
+                const value = `${detail.provider}:${detail.model}`;
+                els.modelSelect.querySelectorAll("[data-history-model]").forEach((option) => option.remove());
+                if (!Array.from(els.modelSelect.options).some((option) => option.value === value)) {
+                    const option = new Option(`${detail.model} · ${detail.provider}`, value);
+                    option.dataset.historyModel = "true";
+                    els.modelSelect.add(option);
+                }
+                els.modelSelect.value = value;
+            }
+            clearValidation();
+            renderResult();
+            renderHistory();
+            setState("历史解析", "success");
+            showToast("已恢复历史原图和解析结果");
+        } catch (error) {
+            showToast(cleanError(error.message));
+        } finally {
+            state.loading = false;
+            updateInputState();
+        }
+    }
+
+    async function deleteHistory(id) {
+        if (state.loading || history.loading) return;
+        const item = history.items.find((entry) => entry.id === id);
+        if (!window.confirm(`确定删除“${item ? item.originalName : "这条历史记录"}”吗？原图和解析结果将永久删除，无法恢复。`)) return;
+        state.loading = true;
+        updateInputState();
+        try {
+            await historyRequest(`${HISTORY_API}/${encodeURIComponent(id)}`, "DELETE");
+            if (state.historyId === id) clearImage();
+            if (state.result && state.result.jobId === id) {
+                state.result = null;
+                els.resultEmpty.hidden = false;
+                els.resultSummary.hidden = true;
+                els.copyButton.disabled = true;
+                els.downloadButton.disabled = true;
+                els.markdownPreview.innerHTML = "";
+                els.sourceView.textContent = "";
+                els.diffView.textContent = "";
+                selectView(state.view);
+                setState("等待输入", "");
+            }
+            showToast("已删除历史记录和原图");
+            await loadHistory(history.page);
+        } catch (error) {
+            showToast(cleanError(error.message));
+        } finally {
+            state.loading = false;
+            updateInputState();
+        }
+    }
 
     function setState(text, type) { els.resultState.innerHTML = `<span class="state-dot ${type}"></span>${text}`; }
     function clearValidation() { els.validationMessage.textContent = ""; els.validationMessage.className = "validation-message"; }

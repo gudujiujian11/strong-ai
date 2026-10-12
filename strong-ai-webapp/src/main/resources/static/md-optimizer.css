@@ -125,5 +125,26 @@ button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-
 .diff-view span { display: block; min-height: 1.75em; padding: 0 9px; }.diff-same { color: var(--muted); }.diff-remove { background: rgba(195,61,53,.12); color: var(--danger); }.diff-add { background: rgba(35,129,92,.12); color: var(--green); }
 .result-summary { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding-top: 17px; border-top: 1px solid var(--line); }.result-summary p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }.retry-button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; padding: 6px 0; background: transparent; color: var(--accent); font-size: 11px; font-weight: 700; }.retry-button svg { width: 14px; height: 14px; }
 .toast { position: fixed; right: 22px; bottom: 22px; z-index: 10; padding: 10px 13px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); box-shadow: var(--shadow); color: var(--ink); font-size: 12px; opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity 150ms ease, transform 150ms ease; }.toast.visible { opacity: 1; transform: translateY(0); }
+.history-toggle { padding: 0; background: transparent; }
+.image-history-panel { margin-bottom: 24px; padding: 24px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.image-history-panel[hidden] { display: none; }
+.history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.history-heading h2 { margin: 5px 0; font-size: 18px; font-weight: 700; }
+.history-note, .history-message { margin: 5px 0 12px; color: var(--muted); font-size: 12px; }
+.history-message:empty { display: none; }
+.history-list { margin: 16px 0; padding: 0; list-style: none; }
+.history-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid var(--line); }
+.history-item.active { border-left: 2px solid var(--accent); padding-left: 12px; }
+.history-item-info { min-width: 0; }
+.history-item-info strong { display: block; overflow-wrap: anywhere; font-size: 13px; }
+.history-item-info small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.history-item-actions, .history-pagination, .history-pagination > div { display: flex; align-items: center; gap: 10px; }
+.history-item-actions { flex-shrink: 0; }
+.history-action, .history-page-button { padding: 7px 11px; border: 1px solid var(--line); border-radius: 6px; background: transparent; font-size: 12px; }
+.history-action:hover:not(:disabled), .history-page-button:hover:not(:disabled) { background: var(--surface-soft); }
+.history-action.delete { color: var(--danger); }
+.history-pagination { justify-content: space-between; border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 12px; }
+.image-history-panel button:disabled, .retry-button:disabled { cursor: not-allowed; opacity: .45; }
+@media (max-width: 520px) { .image-history-panel { padding: 19px; }.history-item { align-items: flex-start; flex-direction: column; gap: 10px; }.history-pagination { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 900px) { .optimizer-main { width: min(94vw, 720px); padding-top: 32px; }.optimizer-intro { min-height: 0; flex-direction: column; align-items: flex-start; gap: 22px; padding-bottom: 25px; }.optimizer-intro h1 { font-size: 41px; }.optimizer-workspace { grid-template-columns: 1fr; }.control-panel { border-right: 0; border-bottom: 1px solid var(--line); }.result-panel { min-height: 570px; } }
 @media (max-width: 520px) { .optimizer-topbar { height: 60px; padding: 0 4vw; }.optimizer-brand { font-size: 12px; }.optimizer-brand-mark { width: 27px; height: 27px; }.quiet-link span { display: none; }.optimizer-main { width: 92vw; padding-bottom: 30px; }.control-panel, .result-panel { padding: 19px; }.mode-grid { grid-template-columns: 1fr; }.mode-card { min-height: 54px; flex-direction: row; align-items: center; gap: 10px; }.field-grid { grid-template-columns: 1fr; }.result-summary { align-items: flex-start; flex-direction: column; gap: 8px; }.result-viewport { padding-right: 0; } }

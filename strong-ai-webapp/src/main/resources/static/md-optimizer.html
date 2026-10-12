@@ -21,6 +21,7 @@
             <span>Strong AI <em>/</em> MD 优化台</span>
         </a>
         <div class="optimizer-top-actions">
+            <button class="quiet-link history-toggle" id="historyButton" type="button" aria-expanded="false" aria-controls="imageHistoryPanel" title="图片解析历史"><i data-lucide="history"></i><span>图片解析历史</span></button>
             <a class="quiet-link" href="/" title="返回聊天"><i data-lucide="message-square"></i><span>聊天</span></a>
             <button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换主题"><i data-lucide="moon"></i></button>
         </div>
@@ -35,7 +36,20 @@
             </div>
             <div class="intro-note">
                 <span class="live-dot"></span>
-                <span>临时处理 · 不保存原文</span>
+                <span>文档优化不保存原文 · 图片解析自动保存历史</span>
+            </div>
+        </section>
+
+        <section class="image-history-panel" id="imageHistoryPanel" aria-labelledby="imageHistoryTitle" hidden>
+            <div class="history-heading">
+                <div><p class="eyebrow">IMAGE HISTORY</p><h2 id="imageHistoryTitle">图片解析历史</h2><p class="history-note">所有访问者均可查看和删除 · 点击查看可恢复原图和结果 · 不设保留期限</p></div>
+                <button class="retry-button" id="refreshHistoryButton" type="button"><i data-lucide="refresh-cw"></i>刷新</button>
+            </div>
+            <p class="history-message" id="historyMessage" role="status" aria-live="polite"></p>
+            <ul class="history-list" id="historyList" aria-label="图片解析历史记录"></ul>
+            <div class="history-pagination">
+                <span id="historyPageInfo">暂无记录</span>
+                <div><button class="history-page-button" id="historyPreviousButton" type="button" disabled>上一页</button><button class="history-page-button" id="historyNextButton" type="button" disabled>下一页</button></div>
             </div>
         </section>
 
