@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f5f1">
+    <title>提示词库 · Strong AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/prompt-center.css">
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="/prompt-center.js" defer></script>
+</head>
+<body>
+<div class="prompt-shell">
+    <header class="prompt-topbar">
+        <a class="prompt-brand" href="/" aria-label="返回 Strong AI 聊天">
+            <span class="prompt-brand-mark">S</span>
+            <span>Strong AI <em>/</em> 提示词库</span>
+        </a>
+        <div class="prompt-top-actions">
+            <a class="quiet-link" href="/" title="返回聊天"><i data-lucide="message-square"></i><span>聊天</span></a>
+            <button class="icon-button" id="themeButton" type="button" aria-label="切换深色模式" title="切换主题"><i data-lucide="moon"></i></button>
+        </div>
+    </header>
+
+    <main class="prompt-main">
+        <header class="prompt-heading">
+            <div>
+                <p class="eyebrow">AUTOMATION CENTER <span>02</span></p>
+                <div class="breadcrumb"><span>自动化中心</span><i data-lucide="chevron-right"></i><strong>提示词库</strong></div>
+                <h1>把好用的指令，<span>留下来。</span></h1>
+                <p class="intro-copy">沉淀团队常用提示词，按分类、标签和版本快速复用。</p>
+            </div>
+            <button class="primary-button" id="newPromptButton" type="button"><i data-lucide="plus"></i>新建提示词</button>
+        </header>
+
+        <section class="prompt-workspace" aria-label="提示词库工作区">
+            <aside class="prompt-sidebar">
+                <div class="filter-heading"><span>浏览</span><span class="result-count" id="resultCount">0 条</span></div>
+                <nav class="category-nav" id="categoryNav" aria-label="提示词分类"></nav>
+                <label class="filter-label" for="tagFilter">标签</label>
+                <input class="filter-input" id="tagFilter" type="search" maxlength="500" placeholder="输入单个标签精确筛选" autocomplete="off">
+                <label class="filter-label" for="searchInput">搜索</label>
+                <label class="search-input-wrap" for="searchInput"><i data-lucide="search"></i><input id="searchInput" type="search" maxlength="500" placeholder="标题、说明或标签" autocomplete="off"></label>
+                <p class="sidebar-note">正文只在打开详情时加载。评分由所有访问者共享，收藏数全局累计；收藏开关保存在当前浏览器。请勿保存密钥或敏感信息。</p>
+            </aside>
+
+            <section class="prompt-content">
+                <div class="list-toolbar"><div><p class="eyebrow">PROMPT LIBRARY</p><h2 id="listTitle">全部提示词</h2></div><button class="quiet-button" id="clearFiltersButton" type="button" hidden>清除筛选</button></div>
+                <p class="list-message" id="listMessage" role="status">正在加载提示词…</p>
+                <div class="prompt-list" id="promptList" aria-live="polite"></div>
+                <div class="empty-state" id="emptyState" hidden><i data-lucide="inbox"></i><strong>还没有匹配的提示词</strong><span>调整筛选条件，或新建一条提示词。</span></div>
+            </section>
+        </section>
+    </main>
+</div>
+
+<dialog class="prompt-dialog detail-dialog" id="detailDialog" aria-labelledby="detailTitle">
+    <div class="dialog-header"><div><p class="eyebrow">PROMPT DETAIL</p><h2 id="detailTitle">提示词详情</h2></div><button class="icon-button" type="button" data-close-dialog="detailDialog" aria-label="关闭"><i data-lucide="x"></i></button></div>
+    <div class="detail-meta" id="detailMeta"></div>
+    <p class="detail-description" id="detailDescription"></p>
+    <pre class="prompt-preview" id="detailContent"></pre>
+    <div class="detail-actions">
+        <button class="primary-button" id="usePromptButton" type="button"><i data-lucide="message-square-plus"></i>填入对话</button>
+        <button class="outline-button" id="favoriteButton" type="button"><i data-lucide="heart"></i><span>收藏</span></button>
+        <div class="rating-control" id="ratingControl" aria-label="提示词评分"></div>
+        <button class="outline-button" id="copyPromptButton" type="button"><i data-lucide="copy"></i>复制</button>
+        <button class="outline-button" id="editPromptButton" type="button"><i data-lucide="pencil"></i>编辑</button>
+        <button class="outline-button" id="historyButton" type="button"><i data-lucide="history"></i>版本历史</button>
+        <button class="danger-button" id="deletePromptButton" type="button"><i data-lucide="trash-2"></i>删除</button>
+    </div>
+</dialog>
+
+<dialog class="prompt-dialog editor-dialog" id="editorDialog" aria-labelledby="editorTitle">
+    <form method="dialog" id="editorForm">
+        <div class="dialog-header"><div><p class="eyebrow">PROMPT EDITOR</p><h2 id="editorTitle">新建提示词</h2></div><button class="icon-button" type="button" data-close-dialog="editorDialog" aria-label="关闭"><i data-lucide="x"></i></button></div>
+        <div class="form-grid">
+            <label>标题<input id="editorTitleInput" name="title" maxlength="100" required placeholder="例如：Java 代码审查清单"></label>
+            <label>分类<select id="editorCategoryInput" name="category" required></select></label>
+        </div>
+        <label>标签 <span class="field-note">用逗号分隔</span><input id="editorTagsInput" name="tags" maxlength="500" placeholder="Java,代码审查,质量"></label>
+        <label>说明 <span class="field-note">可选</span><input id="editorDescriptionInput" name="description" maxlength="500" placeholder="这条提示词适合什么时候使用？"></label>
+        <label>正文 <span class="field-note">最多 65535 字符；填入对话时最多 12000 字符</span><textarea id="editorContentInput" name="content" maxlength="65535" rows="13" placeholder="输入提示词正文，可使用 {{变量名}} 创建填空变量"></textarea></label>
+        <div class="variable-strip"><span>识别到的变量</span><div id="editorVariables"><span class="muted-chip">暂无变量</span></div></div>
+        <p class="dialog-note editor-note">保存仅更新工作副本；新建且正文非空时生成 v1。发布会先保存表单，仅正文与最新已发布版本不同时可发布。</p>
+        <p class="form-error" id="editorError" role="alert"></p>
+        <div class="dialog-footer"><button class="quiet-button" type="button" data-close-dialog="editorDialog">取消</button><span class="footer-spacer"></span><button class="outline-button" id="publishButton" type="button" disabled>发布新版本</button><button class="primary-button" id="savePromptButton" type="submit">保存</button></div>
+    </form>
+</dialog>
+
+<dialog class="prompt-dialog history-dialog" id="historyDialog" aria-labelledby="historyTitle">
+    <div class="dialog-header"><div><p class="eyebrow">VERSION HISTORY</p><h2 id="historyTitle">版本历史</h2></div><button class="icon-button" type="button" data-close-dialog="historyDialog" aria-label="关闭"><i data-lucide="x"></i></button></div>
+    <div class="version-list" id="versionList"></div>
+    <section id="versionPreview" aria-labelledby="versionPreviewTitle" hidden>
+        <h3 id="versionPreviewTitle"></h3>
+        <pre class="prompt-preview" id="versionPreviewContent"></pre>
+    </section>
+    <p class="form-error" id="historyError" role="alert"></p>
+</dialog>
+
+<dialog class="prompt-dialog variables-dialog" id="variablesDialog" aria-labelledby="variablesTitle">
+    <form method="dialog" id="variablesForm">
+        <div class="dialog-header"><div><p class="eyebrow">FILL VARIABLES</p><h2 id="variablesTitle">填写提示词变量</h2></div><button class="icon-button" type="button" data-close-dialog="variablesDialog" aria-label="关闭"><i data-lucide="x"></i></button></div>
+        <p class="dialog-note">填写后会将渲染结果放入首页输入框，不会自动发送。</p>
+        <div id="variablesFields"></div>
+        <p class="form-error" id="variablesError" role="alert"></p>
+        <div class="dialog-footer"><button class="quiet-button" type="button" data-close-dialog="variablesDialog">取消</button><span class="footer-spacer"></span><button class="primary-button" type="submit">填入对话</button></div>
+    </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

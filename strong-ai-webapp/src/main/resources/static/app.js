@@ -69,6 +69,7 @@
         } catch (error) {
             showToast(cleanError(error.message));
         }
+        restorePromptDraft();
         refreshIcons();
     }
 
@@ -172,6 +173,19 @@
         renderMessages();
         updateComposer();
         renderAttachmentDraft();
+    }
+
+    function restorePromptDraft() {
+        try {
+            const draft = sessionStorage.getItem("strong-ai.prompt-draft");
+            if (draft === null) return;
+            elements.messageInput.value = draft;
+            updateComposer();
+            sessionStorage.removeItem("strong-ai.prompt-draft");
+            elements.messageInput.focus();
+        } catch (error) {
+            showToast("无法读取提示词草稿，请检查浏览器存储设置");
+        }
     }
 
     function renderSessions() {

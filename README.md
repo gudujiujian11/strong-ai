@@ -8,6 +8,7 @@ Strong AI 是一个基于 Spring Boot 的多模型 AI 应用，提供网页聊�
 - 会话管理：服务端保存会话、历史消息和模型设置，支持新建、切换模型、清空和重新生成回复。
 - Markdown 优化：支持内容校验、格式整理、内容润色和结构重组；可处理 Markdown 文件、单 Markdown 文件的 ZIP 包，以及 PNG/JPEG/WebP/GIF 图片。
 - 技术文档治理：支持团队内文档草稿、质量检查、AI 优化任务、版本发布与回滚、术语库和 30 天草稿清理。
+- 提示词库：支持四类提示词、标签筛选、工作副本与手动版本发布、共享评分和收藏，以及变量填写后回填聊天。
 
 ## 模块
 
@@ -50,6 +51,7 @@ java -jar strong-ai-webapp/target/strong-ai.jar
 | `http://localhost:11028/` | AI 聊天与会话管理 |
 | `http://localhost:11028/md-optimizer.html` | Markdown 优化台 |
 | `http://localhost:11028/document-governance.html` | 技术文档治理台 |
+| `http://localhost:11028/prompt-center.html` | 自动化中心 / 提示词库 |
 | `http://localhost:11028/doc.html` | Swagger 文档，仅限测试环境开启 |
 
 Swagger 默认关闭。仅在测试环境通过配置中心设置 `strong.swagger.enable=true` 后启用。
@@ -83,6 +85,7 @@ Swagger 默认关闭。仅在测试环境通过配置中心设置 `strong.swagge
 | 文档治理 | `/api/document-governance/documents` | 文档草稿、发布、回滚、版本和质量检查 |
 | 文档治理 | `/api/document-governance/ai-tasks/{taskId}` | 查询 AI 优化任务及 SSE 状态流 |
 | 文档治理 | `/api/document-governance/terms` | 查询或维护当前团队术语 |
+| 提示词库 | `/api/prompts` | 提示词管理、发布/恢复版本、评分与收藏 |
 | Codex 网关 | `POST /api/codex/v1/responses` | 固定使用 `deepseek-v4.1-flash` 的 Responses 兼容接口 |
 | Codex 网关 | `GET /api/codex/v1/models` | 返回固定模型列表 |
 
@@ -150,6 +153,14 @@ strong.document-governance.test-login.enabled=true
 ```
 
 模拟身份仅保存在浏览器 `localStorage`，用于自动附加上述身份头；生产环境必须保持默认值 `false`。
+
+## 提示词库
+
+- Flyway `V7__prompt_library.sql` 在启动时新增 `ai_prompt`、`ai_prompt_version`，并预置四个分类各两条示例提示词及 v1。
+- 新建提示词的正文非空时自动发布 v1；保存只更新工作副本。手动发布要求正文与最新已发布版本不同；恢复历史版本不自动发布。
+- 评分是全局单值，任何访问者评分都会覆盖。收藏数全局累计，收藏开关保存在当前浏览器，清除浏览器数据后无法恢复开关状态。
+- `{{变量名}}` 支持重复引用和多行填写。渲染结果通过 `sessionStorage` 一次性填入首页输入框，不自动发送；聊天草稿最多 12000 字符。
+- 正文最多 65535 字符。提示词及版本为全局共享、长期保存，删除提示词会删除全部版本。不要存入密钥、凭据或敏感数据。
 
 ## 测试
 
